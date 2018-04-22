@@ -44,7 +44,7 @@ int main()
 {
   double angle;
   Vector3d axis;
-  cout.precision(3);
+  cout.precision(4);
   
   
   cout << "Task 1" << endl; 
@@ -85,5 +85,31 @@ int main()
   cout << endl;
 
   cout << "Task 3" << endl; 
+  q1 = Quaterniond(0.55, 0.3, 0.2, 0.2).normalized();
+  q2 = Quaterniond(-0.1, 0.3, -0.7, 0.2).normalized();
+  Vector3d t1 (0.7, 1.1, 0.2);
+  Vector3d t2 (-0.1, 0.4, 0.8);
+  Vector3d p1 (0.5, -0.1, 0.2);
+  
+  cout << "Object in R1's coord and R1's pos = (" << p1.transpose() << ")^T" << endl;
+  
+  // inversion of q1
+  Quaterniond q1_inv = q1.conjugate().normalized();
+  // cout << q1.coeffs() << endl << q1_inv.coeffs() << endl;
+  // cout << (q1 * q1_inv).coeffs() << endl;
+  
+  // rotate back to world coordinates
+  Vector3d p1o = q1_inv * p1; // overloaded *, actually q1_inv dot p1 dot q1 in math
+  cout << "Object in world coord and R1's pos = (" << p1o.transpose() << ")^T" << endl;
+  //cout << q1*p << endl;
 
+  // translate to R2's position
+  Vector3d p2o = p1o + t1 - t2;
+  cout << "Object in world coord and R2's pos = (" << p2o.transpose() << ")^T" << endl;
+  
+  // rotate to R2's coordinates
+  Vector3d p2 = q2 * p2o;
+  cout << "Object in R2's coord and R2's pos = (" << p2.transpose() << ")^T" << endl;
+
+  cout << endl;
 }
