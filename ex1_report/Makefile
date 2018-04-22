@@ -14,10 +14,10 @@ all : $(OUT).aux $(OUT).pdf
 view :
 	open $(OUT).pdf
 
-run_code :
-	python src/decision_tree.py
+check : $(OUT).tex
+	aspell -c -t $(OUT).tex -d en
 
-$(OUT).pdf : $(OUT).tex  $(OUT).bbl $(OUT).blg
+$(OUT).pdf : $(OUT).tex $(OUT).bbl $(OUT).blg
 	$(TEX) $(OUT).tex
 
 $(OUT).bbl $(OUT).blg : $(OUT).bib $(OUT).aux
@@ -33,4 +33,4 @@ $(OUT).bib : $(OUT).tex
 #	$(PRE) $(PMB).tex
 
 clean :
-	rm -rf *.bbl *.blg *.aux *.bib *.fmt $(OUT).pdf *.log
+	rm -rf *.bbl *.blg *.aux *.bib *.fmt $(OUT).pdf *.log *.bak

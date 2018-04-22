@@ -112,4 +112,6 @@ int main()
   cout << "Object in R2's coord and R2's pos = (" << p2.transpose() << ")^T" << endl;
 
   cout << endl;
+
+  return 0;
 }
