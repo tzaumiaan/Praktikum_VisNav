@@ -46,38 +46,44 @@ int main()
   Vector3d axis;
   cout.precision(3);
   
+  
+  cout << "Task 1" << endl; 
+  // assign a random angle and axis
   angle = M_PI/2;
   axis << 1.f/3.f, -2.f/3.f, 2.f/3.f;
-  
   cout << "Given rotation vector with angle = " << angle;
   cout << " and rotation axis = (" << axis.transpose() << ")^T" << endl;
-  cout << "Rotation matrix of Rodrigues' =" << endl;
-  cout << rotation_matrix_rodrigues(angle, axis) << endl;
-  cout << "Rotation matrix from library =" << endl;
-  cout << rotation_matrix_library(angle, axis) << endl;
+  cout << "Rotation matrix of Rodrigues' =" << endl
+       << rotation_matrix_rodrigues(angle, axis) << endl;
+  cout << "Rotation matrix from library =" << endl
+       << rotation_matrix_library(angle, axis) << endl;
+  cout << endl;
   
-  AngleAxisd rotation_vector ( angle, axis );
-  Quaterniond q = Quaterniond ( rotation_vector );
-  
+  cout << "Task 2" << endl; 
   // initialize q1 and q2 as random unit quaternions
   Quaterniond q1 = Quaterniond::UnitRandom();
   Quaterniond q2 = Quaterniond::UnitRandom();
   // coeffs is presented as (x,y,z,w), with imaginary part first and real part last
   cout << "q1 = (" << q1.coeffs().transpose() << ")^T" << endl;
   cout << "q2 = (" << q2.coeffs().transpose() << ")^T" << endl;
-  cout << "q1 mult q2  = \n" << (q1*q2).coeffs() << endl;
-  Vector4d q2v = q2.coeffs();
-  Matrix4d q1m_1 = q_op_plus(q1.coeffs(), true);
-  cout << "q1^ +  q2 = \n" << q_op_plus(q1.coeffs(), true) * q2.coeffs() << endl;
-  cout << "q1^(+) q2 = \n" << q_op_plus(q1.coeffs(), false) * q2.coeffs() << endl;
+  Quaterniond q3 = q1*q2;
+  Vector4d v4 = q_op_plus(q1.coeffs(), true) * q2.coeffs();
+  Vector4d v5 = q_op_plus(q2.coeffs(), false) * q1.coeffs();
+  cout << "q1 q2     = (" << q3.coeffs().transpose() << ")^T" << endl;
+  cout << "q1^ +  q2 = (" << v4.transpose() << ")^T" << endl;
+  cout << "q2^(+) q1 = (" << v5.transpose() << ")^T" << endl;
   
-  // assign quaternion with rotation matrix
-  Matrix3d rotation_matrix = rotation_vector.toRotationMatrix();
-  q = Quaterniond ( rotation_matrix );
-  cout << "quaternion = \n" << q.coeffs() <<endl;
-  // rotate a vector with quaternion
-  Vector3d v ( 1,0,0 );
-  Vector3d v_rotated = q * v; // overloaded mult, which is qvq^{-1}
-  cout << "(1,0,0) after rotation = " << v_rotated.transpose() << endl;
+  // conversion between quaternion and rotation matrix
+  Quaterniond q = q1;
+  cout << "Original q = (" << q.coeffs().transpose() << ")^T" << endl;
+  Matrix3d rotation_matrix = q.toRotationMatrix();
+  cout << "Converted rotation matrix R =" << endl
+       << rotation_matrix << endl;
+  q = Quaterniond(rotation_matrix);
+  cout << "Now convert back to quaternion q' = (" 
+       << q.coeffs().transpose() << ")^T" << endl;
+  cout << endl;
+
+  cout << "Task 3" << endl; 
 
 }
