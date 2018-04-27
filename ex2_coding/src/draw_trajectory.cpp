@@ -30,11 +30,37 @@ int main(int argc, char **argv) {
     /// implement pose reading code
     // start your code here (5~10 lines)
     // end your code here
+    double t, tx, ty, tz, qx, qy, qz, qw;
+    // read in estimation files
+    ifstream f_est(estimated_trajectory_file);
+    while(f_est >> t >> tx >> ty >> tz >> qx >> qy >> qz >> qw)
+    {
+        Sophus::SE3d tmp (Eigen::Quaterniond(qw, qx, qy, qz), Eigen::Vector3d(tx, ty, tz));
+        estimated.push_back(tmp);
+    }
+    // read in ground truth files
+    ifstream f_gnd(ground_truth_trajectory_file);
+    while(f_gnd >> t >> tx >> ty >> tz >> qx >> qy >> qz >> qw)
+    {
+        Sophus::SE3d tmp (Eigen::Quaterniond(qw, qx, qy, qz), Eigen::Vector3d(tx, ty, tz));
+        groundtruth.push_back(tmp);
+    }
+
 
     // draw trajectory in pangolin
     DrawTrajectory(estimated, groundtruth);
 
     /// you can also use this code to compute the ATE and RMSE alignment error.
+    int v_size = min(estimated.size(), groundtruth.size());
+    double ate = 0.f;
+    for(int i=0; i<v_size; i++)
+    {
+        Eigen::Vector3d t_diff = estimated[i].translation() - groundtruth[i].translation();
+        ate += t_diff.squaredNorm();
+    }
+    ate /= v_size;
+    cout << "ATE = " << ate << endl;
+    // TODO: RMSE
 
     return 0;
 }
