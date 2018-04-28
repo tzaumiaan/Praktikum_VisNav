@@ -53,14 +53,18 @@ int main(int argc, char **argv) {
     /// you can also use this code to compute the ATE and RMSE alignment error.
     int v_size = min(estimated.size(), groundtruth.size());
     double ate = 0.f;
+    double rmse = 0.f;
     for(int i=0; i<v_size; i++)
     {
         Eigen::Vector3d t_diff = estimated[i].translation() - groundtruth[i].translation();
         ate += t_diff.squaredNorm();
+        Sophus::SE3d t_mult = groundtruth[i].inverse() * estimated[i];
+        rmse += t_mult.log().squaredNorm();
     }
     ate /= v_size;
     cout << "ATE = " << ate << endl;
-    // TODO: RMSE
+    rmse = sqrt(rmse/v_size);
+    cout << "RMSE = " << rmse << endl;
 
     return 0;
 }
