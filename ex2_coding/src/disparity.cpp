@@ -12,9 +12,9 @@ using namespace std;
 using namespace Eigen;
 
 // file paths, please adjust them if they are different in your computer
-string left_file = "./left.png";
-string right_file = "./right.png";
-string disparity_file = "./disparity.png";
+string left_file = "../data/left.png";
+string right_file = "../data/right.png";
+string disparity_file = "../data/disparity.png";
 
 // show point cloud in pangolin
 // Point cloud is defined as a vector of Vector4d, where the first three components are XYZ and the last one is the gray-scale value

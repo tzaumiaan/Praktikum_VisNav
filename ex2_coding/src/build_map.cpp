@@ -5,6 +5,9 @@
 #include <boost/format.hpp>
 #include <sophus/se3.hpp>
 
+// for usleep in mac osx
+#include <unistd.h>
+
 using namespace std;
 using namespace Eigen;
 
@@ -16,9 +19,9 @@ typedef std::vector<Vector6d, Eigen::aligned_allocator<Vector6d>> PointCloudType
 void showPointCloud(const PointCloudType &pointcloud);
 
 // use boost::format to read image files
-boost::format fmt_rgb("./RGBD%d.png");
-boost::format fmt_depth("./depth%d.pgm");
-string extrinsic_file = "./RGBD-extrinsic.txt";
+boost::format fmt_rgb("../data/RGBD%d.png");
+boost::format fmt_depth("../data/depth%d.pgm");
+string extrinsic_file = "../data/RGBD-extrinsic.txt";
 
 int main() {
 
@@ -64,7 +67,10 @@ int main() {
                 Vector3d pw;
                 // TODO compute the world coordinates for (u,v,d)
                 /// start your code here
-
+                // pw[0] = u, pw[1] = v, pw[2] = d
+                pw[2] = double(d)/depth_scale;
+                pw[0] = (u - cx)/fx * pw[2];
+                pw[1] = (v - cy)/fy * pw[2];
                 /// end your code here
 
                 // read color

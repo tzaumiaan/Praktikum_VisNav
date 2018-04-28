@@ -27,3 +27,6 @@ target_link_libraries(ex2_task3_1 ${OpenCV_LIBS})
 add_executable(ex2_task3_2 src/disparity.cpp)
 target_link_libraries(ex2_task3_2 ${OpenCV_LIBS} ${Pangolin_LIBRARIES})
 
+add_executable(ex2_task3_3 src/build_map.cpp)
+target_link_libraries(ex2_task3_3 ${Sophus_LIBRARIES} ${OpenCV_LIBS} ${Pangolin_LIBRARIES})
+
