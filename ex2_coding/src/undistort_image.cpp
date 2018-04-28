@@ -30,7 +30,13 @@ int main(int argc, char **argv) {
             double u_distorted = 0, v_distorted = 0;
             // TODO compute the coordinates in the original image (u_distorted, v_distorted) (~6 lines)
             // start your code here
-            
+            double x = (u - cx)/fx;
+            double y = (v - cy)/fy;
+            double r2 = x*x + y*y;
+            double x_distorted = x*(1 + k1*r2 + k2*r2*r2) + 2*p1*x*y + p2*(r2 + 2*x*x); 
+            double y_distorted = y*(1 + k1*r2 + k2*r2*r2) + p1*(r2 + 2*y*y) + 2*p2*x*y;
+            u_distorted = fx*x_distorted + cx;
+            v_distorted = fy*y_distorted + cy;
             // end your code here
 
             // fill the grayscale value
