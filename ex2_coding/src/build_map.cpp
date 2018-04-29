@@ -67,10 +67,12 @@ int main() {
                 Vector3d pw;
                 // TODO compute the world coordinates for (u,v,d)
                 /// start your code here
-                // pw[0] = u, pw[1] = v, pw[2] = d
-                pw[2] = double(d)/depth_scale;
-                pw[0] = (u - cx)/fx * pw[2];
-                pw[1] = (v - cy)/fy * pw[2];
+                // p[0] = u, p[1] = v, p[2] = d
+                Vector3d point;
+                point[2] = double(d)/depth_scale;
+                point[0] = (u - cx)/fx * point[2];
+                point[1] = (v - cy)/fy * point[2];
+                pw = Twc*point;
                 /// end your code here
 
                 // read color

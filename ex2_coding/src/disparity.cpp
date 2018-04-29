@@ -43,7 +43,11 @@ int main(int argc, char **argv) {
                            left.at<uchar>(v, u) / 255.0); // first three components are XYZ and the last is color
 
             /// start your code here (~6 lines)
-
+            point[2] = fx * b / (disparity.at<uchar>(v,u)/255.0);
+            point[0] = (u - cx)/fx * point[2];
+            point[1] = (v - cy)/fy * point[2];
+            point[3] = (left.at<uchar>(v, u)/255.0);
+            pointcloud.push_back(point);
             /// end your code here
         }
 
