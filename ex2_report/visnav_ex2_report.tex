@@ -1,15 +1,18 @@
 \documentclass[12pt,a4paper]{article}
 
 \usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry} % less blank area
-\usepackage{amsmath,bm} % for math
+\usepackage{amsmath,amssymb,bm,dsfont} % for math
 \usepackage{array}   % for eqnarray
+\usepackage{arydshln}
 \usepackage{graphicx}
+\usepackage{enumerate} % for stylish enumrate
 \usepackage{listings} % for code demonstration
 \usepackage{color}    % for code highlight
 \usepackage{fancyhdr} % for header and footnote
 \usepackage{lastpage} % for calculating total pages
 \usepackage{subfig} % for subfigure
 \usepackage{tikz} % for drawing
+\usepackage{pdfpages} % for importing PDF files
 
 \newcommand{\docTitle}{IN2106 Practical Course -- Vision-based Navigation: Exercise \#2}
 \newcommand{\docAuthor}{Min-An Chao (03681062)}
@@ -33,6 +36,15 @@
 \setlength{\parindent}{0cm}
 \setlength{\parskip}{0.5cm}
 
+% for vector and matrix
+\newcommand{\vct}[1]{\boldsymbol{#1}}
+\newcommand{\mtx}[1]{\mathbf{#1}}
+\newcommand{\set}[1]{\mathcal{#1}}
+\newcommand{\dom}[1]{\mathbb{#1}}
+\newcommand{\fnc}[1]{\text{#1}}
+
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\argmax}{argmax}
 
 \begin{document}
     \title{\vspace{-1.75cm} \large \textsf{\textbf{\docTitle}}}
@@ -50,8 +62,35 @@
    
     \textsf{\textbf{Proof}}
     From the Taylor's series we have,
-    % TODO
-
+    \begin{eqnarray}\label{eq:lj_proof}
+      \sum_{n=0}^{\infty} \frac{1}{(n+1)!} (\vct{\phi}^{\wedge})^n
+      &=& \sum_{n=0}^{\infty} \frac{1}{(n+1)!} (\theta \vct{a}^{\wedge})^n \nonumber\\
+      &=& \underbrace{\mtx{I}}_{=\vct{a}\vct{a}^T - \vct{a}^{\wedge}\vct{a}^{\wedge}}
+          + \theta \vct{a}^{\wedge} 
+          + \frac{\theta^2}{2!}\vct{a}^{\wedge}\vct{a}^{\wedge} 
+          + \frac{\theta^3}{3!}\underbrace{
+            \vct{a}^{\wedge}\vct{a}^{\wedge}\vct{a}^{\wedge}
+            }_{= -\vct{a}^{\wedge}}
+          + \cdots \nonumber\\
+      &=& \vct{a}\vct{a}^T
+          + \underbrace{\left(  
+            \theta - \frac{\theta^3}{3!} + \frac{\theta^5}{5!} - \cdots 
+            \right)}_{= \sin \theta}
+            \vct{a}^{\wedge}
+          - \underbrace{\left(  
+            1 - \frac{\theta^2}{2!} + \frac{\theta^4}{4!} - \cdots
+            \right)  }_{= \cos \theta} 
+            \vct{a}^{\wedge}\vct{a}^{\wedge}  \nonumber\\
+      &=& \vct{a}\vct{a}^T
+          + \sin \theta \vct{a}^{\wedge}
+          - \cos \theta \underbrace{
+            \vct{a}^{\wedge}\vct{a}^{\wedge}
+            }_{ = \vct{a}\vct{a}^T - \mtx{I}}  \nonumber\\
+      &=& \cos \theta \mtx{I}
+          + (1 - \cos\theta) \vct{a}\vct{a}^T 
+          + \sin \theta \vct{a}^{\wedge}.
+    \end{eqnarray}
+    
     \textsf{\textbf{Coding validation}}
     \begin{lstlisting}[frame=single,numbers=left]
 given translation vector rho = (1 0 0)^T
@@ -92,7 +131,7 @@ rotation matrix of Rodrigues' =
     \section{Images, camera intrinsic and extrinsic}
     \textsf{\textbf{Task 1}}
     The recovered image is shown in Fig.~\ref{fig:undistort_image}.
-    We can see now the stright line of windows and the edges of metal cylinders,
+    We can see now the straight line of windows and the edges of metal cylinders,
     which are distort in the original image.
     \begin{figure}[!h]
         \centering
