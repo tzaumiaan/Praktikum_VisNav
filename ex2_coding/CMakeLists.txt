@@ -18,6 +18,9 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # executables
+add_executable(ex2_task1 src/left_jacobian.cpp)
+target_link_libraries(ex2_task1 ${Sophus_LIBRARIES})
+
 add_executable(ex2_task2 src/draw_trajectory.cpp)
 target_link_libraries(ex2_task2 ${Sophus_LIBRARIES} ${Pangolin_LIBRARIES})
 
