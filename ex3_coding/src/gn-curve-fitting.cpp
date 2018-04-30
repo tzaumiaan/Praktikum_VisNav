@@ -36,11 +36,12 @@ int main(int argc, char **argv) {
         for (int i = 0; i < N; i++) {
             double xi = x_data[i], yi = y_data[i];  // the i-th data
             // start your code here
-            double error = 0;   // compute the error of i-th data
+            double fi = exp(ae*xi*xi + be*xi + ce);
+            double error = yi - fi;   // compute the error of i-th data
             Vector3d J; // compute Jacobian
-            J[0] = 0;  // de/da
-            J[1] = 0;  // de/db
-            J[2] = 0;  // de/dc
+            J[0] = -fi*xi*xi;  // de/da
+            J[1] = -fi*xi;  // de/db
+            J[2] = -fi;  // de/dc
 
             H += J * J.transpose(); // set Hessian
             b += -error * J;    // set bias
@@ -51,7 +52,7 @@ int main(int argc, char **argv) {
 
         // solve normal equation Hx=b
         // start your code here
-        Vector3d dx;    // update
+        Vector3d dx = H.inverse() * b;    // update
         // end your code here
 
         if (isnan(dx[0])) {

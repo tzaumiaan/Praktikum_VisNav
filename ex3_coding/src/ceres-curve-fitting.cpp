@@ -17,7 +17,10 @@ struct CURVE_FITTING_COST {
             T *residual) const     // residual
     {
         /// start your code here
-
+        const T a = abc[0];
+        const T b = abc[1];
+        const T c = abc[2];
+        residual[0] = (T)(_y) - ceres::exp(a*(T)(_x)*(T)(_x) + b*(T)(_x) +c);
         /// end your code here
         return true;
     }
@@ -43,7 +46,18 @@ int main(int argc, char **argv) {
     ceres::Problem problem;
     // TODO build the optimization problem
     /// start your code here
-
+    double abc[3] = {ae, be, ce};
+    for(int i=0; i<N; i++)
+    {
+        // Set up the only cost function (also known as residual). This uses
+        // auto-differentiation to obtain the derivative (jacobian).
+        ceres::CostFunction* cost_function =
+            new ceres::AutoDiffCostFunction<CURVE_FITTING_COST, 1, 3>
+            (
+                new CURVE_FITTING_COST(x_data[i], y_data[i])
+            );
+        problem.AddResidualBlock(cost_function, NULL, abc);
+    }
     /// end your code here
 
     // setup solver
@@ -59,7 +73,7 @@ int main(int argc, char **argv) {
 
     // output the results
     cout << summary.BriefReport() << endl;
-    cout << "estimated a,b,c = " << ae << ", " << be << ", " << ce << endl;
+    cout << "estimated a,b,c = " << abc[0] << ", " << abc[1] << ", " << abc[2] << endl;
 
     return 0;
 }
