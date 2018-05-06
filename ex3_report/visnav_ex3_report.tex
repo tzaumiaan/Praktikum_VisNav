@@ -217,8 +217,8 @@ estimated a,b,c = 0.890908, 2.1719, 0.943628
     \textsf{\textbf{Task 3}}
     Updates on estimation pose are made iterative by
     \begin{eqnarray}
-      \mtx{H}_k &=& \sum_i \vct{J}_{k,i} \vct{J}_{k,i}^T, \nonumber\\
-      \vct{b}_k &=& \sum_i - e_{k,i} \vct{J}_{k,i}, \nonumber\\
+      \mtx{H}_k &=& \sum_i \vct{J}_{k,i}^T \vct{J}_{k,i}, \nonumber\\
+      \vct{b}_k &=& \sum_i - \vct{J}_{k,i}^T \vct{e}_{k,i} , \nonumber\\
       \Delta \mtx{T}_k &=& \mtx{H}_k^{-1} \vct{b}_k, \nonumber\\
       \mtx{T}_k  &=& (\Delta \mtx{T}_k)^{\wedge}  \mtx{T}_{k-1}.
     \end{eqnarray}
