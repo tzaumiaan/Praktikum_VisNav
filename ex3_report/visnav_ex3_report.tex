@@ -182,10 +182,68 @@ estimated a,b,c = 0.890908, 2.1719, 0.943628
 
     \section{Camera Pose Estimation by Gauss-Newton Method}
     \textsf{\textbf{Task 1}}
+    Suppose the rotation matrix of 
+    the estimated pose $\mtx{T}_k$ is $\mtx{R}_k$
+    and the translation part is $\vct{t}_k$,
+    where $k$ stands for the iteration count.
+    The projected position of 3D points $\vct{p}_i$ would be
+    \begin{eqnarray}\label{eq:proj_pos}
+      \vct{q}_{k,i} &=& \mtx{R}_{k-1} \vct{p}_i + \vct{t}_{k-1} \nonumber \\
+      &=& (x_{k,i}, y_{k,i}, z_{k,i})^T.
+    \end{eqnarray}
+    The re-projection error $\vct{e}_{k,i}$ is obtained
+    by applying the intrinsic matrix to the projected position
+    with the normalization term $z_{k,i}$, or equally, ${q^{'}_{k,i}}^{(2)}$,
+    which is,
+    \begin{eqnarray}
+      \vct{q}^{'}_{k,i} &=& \mtx{K}\vct{q}_{k,i}, \nonumber \\
+      \vct{e}_{k,i} &=& \vct{u}_i -
+        \frac{1}{ z_{k,i}} \cdot ({q^{'}_{k,i}}^{(0)}, {q^{'}_{k,i}}^{(1)})^T,
+    \end{eqnarray}
 
     \textsf{\textbf{Task 2}}
+    The Jacobian matrix of error could be derived,
+    based on the slides,
+    as
+    \begin{eqnarray}
+      \mtx{J}_{k,i} = \begin{pmatrix}
+        -\frac{f_x}{z_{k,i}} & 0 & \frac{f_x  x_{k,i}}{z_{k,i}^2} & \frac{f_x  x_{k,i} y_{k,i}}{z_{k,i}^2} & -f_x - \frac{f_x  x_{k,i}^2}{z_{k,i}^2} & \frac{f_x y_{k,i}}{z_{k,i}} \\
+        0 & -\frac{f_y}{z_{k,i}} & \frac{f_y  y_{k,i}}{z_{k,i}^2} & f_y + \frac{f_y  y_{k,i}^2}{z_{k,i}^2} & -\frac{f_y x_{k,i} y_{k,i}}{z_{k,i}^2} & -\frac{f_y x_{k,i}}{z_{k,i}} 
+      \end{pmatrix},
+    \end{eqnarray}
+    where $x_{k,i}, y_{k,i}, z_{k,i}$ comes from Eq.~\ref{eq:proj_pos},
+    and $f_x = K_{0,0}, f_y = K_{1,1}$.
 
     \textsf{\textbf{Task 3}}
+    Updates on estimation pose are made iterative by
+    \begin{eqnarray}
+      \mtx{H}_k &=& \sum_i \vct{J}_{k,i} \vct{J}_{k,i}^T, \nonumber\\
+      \vct{b}_k &=& \sum_i - e_{k,i} \vct{J}_{k,i}, \nonumber\\
+      \Delta \mtx{T}_k &=& \mtx{H}_k^{-1} \vct{b}_k, \nonumber\\
+      \mtx{T}_k  &=& (\Delta \mtx{T}_k)^{\wedge}  \mtx{T}_{k-1}.
+    \end{eqnarray}
+    $\Delta \mtx{T}_k$ here is expressed as a $\mathfrak{se}(3)$ 6-by-1 vector.
+    Updates can be applied by calculating its exponential map, 
+    and multiplying it to the previous pose $\mtx{T}_{k-1}$.
+    The results are shown below.
+    \begin{lstlisting}[frame=single,numbers=left]
+points: 76
+iteration 0 cost=45538.2
+iteration 1 cost=413.209
+iteration 2 cost=302.649
+iteration 3 cost=301.357
+iteration 4 cost=301.351
+iteration 5 cost=301.351
+iteration 6 cost=301.351
+iteration 7 cost=301.351
+iteration 8 cost=301.351
+cost: 301.351, last cost: 301.351
+estimated pose: 
+  0.997866 -0.0516724  0.0399128  -0.127227
+ 0.0505959    0.99834  0.0275274 -0.0075068
+-0.0412689 -0.0254492   0.998824  0.0613861
+         0          0          0          1
+    \end{lstlisting}
 
 %% template for figures
 %   \begin{figure}[!h]
