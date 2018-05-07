@@ -12,17 +12,17 @@ find_package(Pangolin REQUIRED)
 include_directories(${Pangolin_INCLUDE_DIRS})
 
 # eigen
-include_directories("/usr/include/eigen3")  # change this if your eigen is not installed by apt-get
+include_directories("/usr/local/include/eigen3")  # change this if your eigen is not installed by apt-get
 
 # sophus
 find_package(Sophus REQUIRED)
 include_directories(${Sophus_INCLUDE_DIRS})
 
-add_executable(computeORB computeORB.cpp)
+add_executable(computeORB src/computeORB.cpp)
 target_link_libraries(computeORB ${OpenCV_LIBS})
 
-add_executable(LKFlow optical_flow.cpp)
+add_executable(LKFlow src/optical_flow.cpp)
 target_link_libraries(LKFlow ${OpenCV_LIBS})
 
-add_executable(direct_method direct_method.cpp)
+add_executable(direct_method src/direct_method.cpp)
 target_link_libraries(direct_method ${OpenCV_LIBS} ${Pangolin_LIBRARIES})

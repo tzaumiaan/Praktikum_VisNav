@@ -9,10 +9,10 @@
 using namespace std;
 
 // global variables
-string first_file = "./ORB1.png";
-string second_file = "./ORB2.png";
-string first_depth_file = "./ORB1_depth.png";
-string second_depth_file = "./ORB2_depth.png";
+string first_file = "../data/ORB1.png";
+string second_file = "../data/ORB2.png";
+string first_depth_file = "../data/ORB1_depth.png";
+string second_depth_file = "../data/ORB2_depth.png";
 
 // intrinsics
 float fx = 520.9;
@@ -190,7 +190,29 @@ void computeAngle(const cv::Mat &image, vector<cv::KeyPoint> &keypoints) {
     int half_patch_size = 8;
     for (auto &kp : keypoints) {
         // START YOUR CODE HERE (~7 lines)
-        kp.angle = 0; // compute kp.angle 
+        //cout << kp.pt.x << " " << kp.pt.y << " ";
+        //cout << image.rows << " " << image.cols << " ";
+        //cout << (double)(image.at<uchar>(kp.pt)) << endl;
+        double m01 = 0, m10 = 0;
+            for(int y = -half_patch_size; y < half_patch_size; y++)
+            {
+                int row = kp.pt.y + y;
+                if(row < 0 || row >= image.rows) continue;
+            for(int x = -half_patch_size; x < half_patch_size; x++)
+            {
+                int col = kp.pt.x + x;
+                if(col < 0 || col >= image.cols) continue;
+                m01 += (double)(image.at<uchar>(row, col)) * y;
+                m10 += (double)(image.at<uchar>(row, col)) * x;
+                //cout << "("<<row<<","<<col<<")";
+                //cout << (double)(image.at<uchar>(row, col)) << " ";
+            }
+            //cout << endl;
+        }
+        // compute kp.angle 
+        //kp.size = 15;
+        kp.angle = atan(m01/m10)*180/M_PI + (int)(m10<0)*180;
+        //cout << m01 << " " << m10 << " " << kp.angle<< endl;
         // END YOUR CODE HERE
     }
     return;
