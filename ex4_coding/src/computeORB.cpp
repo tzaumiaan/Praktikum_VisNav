@@ -190,29 +190,22 @@ void computeAngle(const cv::Mat &image, vector<cv::KeyPoint> &keypoints) {
     int half_patch_size = 8;
     for (auto &kp : keypoints) {
         // START YOUR CODE HERE (~7 lines)
-        //cout << kp.pt.x << " " << kp.pt.y << " ";
-        //cout << image.rows << " " << image.cols << " ";
-        //cout << (double)(image.at<uchar>(kp.pt)) << endl;
         double m01 = 0, m10 = 0;
-            for(int y = -half_patch_size; y < half_patch_size; y++)
-            {
-                int row = kp.pt.y + y;
-                if(row < 0 || row >= image.rows) continue;
+        for(int y = -half_patch_size; y < half_patch_size; y++)
+        {
+            int row = kp.pt.y + y;
+            if(row < 0 || row >= image.rows) continue;
             for(int x = -half_patch_size; x < half_patch_size; x++)
             {
                 int col = kp.pt.x + x;
                 if(col < 0 || col >= image.cols) continue;
                 m01 += (double)(image.at<uchar>(row, col)) * y;
                 m10 += (double)(image.at<uchar>(row, col)) * x;
-                //cout << "("<<row<<","<<col<<")";
-                //cout << (double)(image.at<uchar>(row, col)) << " ";
             }
-            //cout << endl;
         }
         // compute kp.angle 
-        //kp.size = 15;
+        //kp.size = 15; // to make the marks larger
         kp.angle = atan(m01/m10)*180/M_PI + (int)(m10<0)*180;
-        //cout << m01 << " " << m10 << " " << kp.angle<< endl;
         // END YOUR CODE HERE
     }
     return;
@@ -224,7 +217,22 @@ void computeORBDesc(const cv::Mat &image, vector<cv::KeyPoint> &keypoints, vecto
         DescType d(256, false);
         for (int i = 0; i < 256; i++) {
             // START YOUR CODE HERE (~7 lines)
-            d[i] = 0;  // if kp goes outside, set d.clear()
+            double cos_theta = cos(kp.angle*M_PI/180), sin_theta = sin(kp.angle*M_PI/180);
+            int p_u = (int)(cos_theta*ORB_pattern[4*i+0] - sin_theta*ORB_pattern[4*i+1]);
+            int p_v = (int)(sin_theta*ORB_pattern[4*i+0] + cos_theta*ORB_pattern[4*i+1]);
+            int q_u = (int)(cos_theta*ORB_pattern[4*i+2] - sin_theta*ORB_pattern[4*i+3]);
+            int q_v = (int)(sin_theta*ORB_pattern[4*i+2] + cos_theta*ORB_pattern[4*i+3]);
+            int p_col = kp.pt.x+p_u, p_row = kp.pt.y+p_u;
+            int q_col = kp.pt.x+q_u, q_row = kp.pt.y+q_u;
+            if( (p_row < 0 || p_row >= image.rows) ||
+                (q_row < 0 || q_row >= image.rows) ||
+                (p_col < 0 || p_row >= image.cols) ||
+                (q_col < 0 || q_row >= image.cols) )
+            { 
+                d.clear(); // if kp goes outside, set d.clear()
+                break;
+            }
+            d[i] = (image.at<uchar>(p_row, p_col) > image.at<uchar>(q_row, q_col));
             // END YOUR CODE HERE
         }
         desc.push_back(d);
