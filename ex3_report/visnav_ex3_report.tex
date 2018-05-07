@@ -220,7 +220,7 @@ estimated a,b,c = 0.890908, 2.1719, 0.943628
       \mtx{H}_k &=& \sum_i \vct{J}_{k,i}^T \vct{J}_{k,i}, \nonumber\\
       \vct{b}_k &=& \sum_i - \vct{J}_{k,i}^T \vct{e}_{k,i} , \nonumber\\
       \Delta \mtx{T}_k &=& \mtx{H}_k^{-1} \vct{b}_k, \nonumber\\
-      \mtx{T}_k  &=& (\Delta \mtx{T}_k)^{\wedge}  \mtx{T}_{k-1}.
+      \mtx{T}_k  &=& \exp((\Delta \mtx{T}_k)^{\wedge})  \mtx{T}_{k-1}.
     \end{eqnarray}
     $\Delta \mtx{T}_k$ here is expressed as a $\mathfrak{se}(3)$ 6-by-1 vector.
     Updates can be applied by calculating its exponential map, 
