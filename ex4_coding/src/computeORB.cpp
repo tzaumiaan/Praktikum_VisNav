@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <Eigen/Core>
 #include <string>
+#include <algorithm>
 
 using namespace std;
 
@@ -222,12 +223,12 @@ void computeORBDesc(const cv::Mat &image, vector<cv::KeyPoint> &keypoints, vecto
             int p_v = (int)(sin_theta*ORB_pattern[4*i+0] + cos_theta*ORB_pattern[4*i+1]);
             int q_u = (int)(cos_theta*ORB_pattern[4*i+2] - sin_theta*ORB_pattern[4*i+3]);
             int q_v = (int)(sin_theta*ORB_pattern[4*i+2] + cos_theta*ORB_pattern[4*i+3]);
-            int p_col = kp.pt.x+p_u, p_row = kp.pt.y+p_u;
-            int q_col = kp.pt.x+q_u, q_row = kp.pt.y+q_u;
+            int p_col = kp.pt.x+p_u, p_row = kp.pt.y+p_v;
+            int q_col = kp.pt.x+q_u, q_row = kp.pt.y+q_v;
             if( (p_row < 0 || p_row >= image.rows) ||
                 (q_row < 0 || q_row >= image.rows) ||
-                (p_col < 0 || p_row >= image.cols) ||
-                (q_col < 0 || q_row >= image.cols) )
+                (p_col < 0 || p_col >= image.cols) ||
+                (q_col < 0 || q_col >= image.cols) )
             { 
                 d.clear(); // if kp goes outside, set d.clear()
                 break;
@@ -254,6 +255,37 @@ void bfMatch(const vector<DescType> &desc1, const vector<DescType> &desc2, vecto
     // don't call openCV's brute-force matching algorithm, implement it by yourself
 
     // START YOUR CODE HERE (~12 lines)
+    vector<cv::DMatch> m_tmp;
+    vector<int> idx_tmp;
+    for (int i=0; i<desc1.size(); i++) {
+        if(desc1[i].empty()){ continue; }
+        cv::DMatch m;
+        m.distance = d_max + 1; // just larger than d_max
+        for (int j=0; j<desc2.size(); j++) {
+            if(desc2[j].empty()){ continue; }
+            int hamming_dist = 0;
+            for (int k = 0; k < 256; k++) {
+                if(desc1[i][k] != desc2[j][k]){ hamming_dist++; }
+                if(hamming_dist > d_max){ break; } // early termination
+            }
+            if(hamming_dist < m.distance){
+                m.distance = hamming_dist; // record the track of min distance
+                m.trainIdx = j; // record the index
+            }
+        }
+        if(m.distance <= d_max){
+            m.queryIdx = i;
+            m_tmp.push_back(m);
+            idx_tmp.push_back(m.trainIdx);
+        }
+    }
+    
+    // remove matches with the same trainIdx, only push unique pairs
+    vector<cv::DMatch>::iterator iter;
+    for(iter = m_tmp.begin(); iter != m_tmp.end();){
+        if(count(idx_tmp.begin(), idx_tmp.end(), iter->trainIdx)==1){matches.push_back(*iter);}
+        iter++;
+    }
     // END YOUR CODE HERE
 
     for (auto &m: matches) {
