@@ -5,7 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <Eigen/Core>
 #include <string>
-#include <algorithm>
+#include <opencv2/core/eigen.hpp> // for cv2eigen
 
 using namespace std;
 
@@ -192,12 +192,10 @@ void computeAngle(const cv::Mat &image, vector<cv::KeyPoint> &keypoints) {
     for (auto &kp : keypoints) {
         // START YOUR CODE HERE (~7 lines)
         double m01 = 0, m10 = 0;
-        for(int y = -half_patch_size; y < half_patch_size; y++)
-        {
+        for(int y = -half_patch_size; y < half_patch_size; y++){
             int row = kp.pt.y + y;
             if(row < 0 || row >= image.rows) continue;
-            for(int x = -half_patch_size; x < half_patch_size; x++)
-            {
+            for(int x = -half_patch_size; x < half_patch_size; x++){
                 int col = kp.pt.x + x;
                 if(col < 0 || col >= image.cols) continue;
                 m01 += (double)(image.at<uchar>(row, col)) * y;
@@ -306,6 +304,21 @@ void poseEstimation2d2d(
     // hints: you can call openCV's function like findEssential and recoverPose to get the E and R,t (recoverPose is only in cv3)
 
     // START YOUR CODE HERE (~12 lines)
+    // type transform from cv::KeyPoint to cv::Point2f
+    vector<cv::Point2f> p1, p2;
+    for(auto &kp: keypoints_1){ p1.push_back(kp.pt); }
+    for(auto &kp: keypoints_2){ p2.push_back(kp.pt); }
+    // compute the essential matrix
+    cv::Point2d p (cx, cy); // principle point
+    double f = (fx + fy)/2; // focal length, but why fx != fy ?
+    cv::Mat ess_mtx = findEssentialMat(p1, p2, f, p);
+    //cout << "essential_matrix is " << endl << ess_mtx << endl;
+    // recover pose from essential matrix
+    cv::Mat R, t;
+    recoverPose(ess_mtx, p1, p2, R, t, f, p);
+    // type transform from cv::Mat to Eigen::MatrixXd
+    cv::cv2eigen(R, R21);
+    cv::cv2eigen(t, t21);
     // END YOUR CODE HERE
 }
 
