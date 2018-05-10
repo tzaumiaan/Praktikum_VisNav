@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
     vector<cv::KeyPoint> kpm1, kpm2;
     for (auto &m: matches) {
         kpm1.push_back(keypoints[m.queryIdx]);
-        kpm2.push_back(keypoints[m.trainIdx]);
+        kpm2.push_back(keypoints2[m.trainIdx]);
     }
 
     // compute the 2D-2D transform
@@ -166,7 +166,7 @@ int main(int argc, char **argv) {
     // skip those keypoints whose depth is invalid (==0)
     assert(kpm1.size()==kpm2.size());
     for(int i=0; i < kpm1.size(); i++){
-        unsigned int depth = first_depth_image.at<unsigned int>(kpm1[i].pt.y, kpm1[i].pt.x);
+        double depth = (double)first_depth_image.at<unsigned short>(kpm1[i].pt.y, kpm1[i].pt.x);
         if (depth == 0){ continue; } // invalid depth
         double depth_n = depth/depth_scale; // normalized depth
         cv::Point2d p((kpm1[i].pt.x - cx)/fx, (kpm1[i].pt.y - cy)/fy); // coordinate transform
@@ -187,8 +187,8 @@ int main(int argc, char **argv) {
     // skip those keypoints whose depth is invalid (==0)
     assert(kpm1.size()==kpm2.size());
     for(int i=0; i < kpm1.size(); i++){
-        unsigned int depth1 = first_depth_image.at<unsigned int>(kpm1[i].pt.y, kpm1[i].pt.x);
-        unsigned int depth2 = first_depth_image.at<unsigned int>(kpm2[i].pt.y, kpm2[i].pt.x);
+        double depth1 = (double)first_depth_image.at<unsigned short>(kpm1[i].pt.y, kpm1[i].pt.x);
+        double depth2 = (double)first_depth_image.at<unsigned short>(kpm2[i].pt.y, kpm2[i].pt.x);
         if ((depth1==0) || (depth2==0)){ continue; } // invalid depth
         double depth1_n = depth1/depth_scale; // normalized depth
         double depth2_n = depth2/depth_scale; // normalized depth
@@ -301,12 +301,19 @@ void bfMatch(const vector<DescType> &desc1, const vector<DescType> &desc2, vecto
         }
     }
     
-    // remove matches with the same trainIdx, only push unique pairs
+    // method 1: remove matches with the same trainIdx, only push unique pairs
     vector<cv::DMatch>::iterator iter;
     for(iter = m_tmp.begin(); iter != m_tmp.end();){
         if(count(idx_tmp.begin(), idx_tmp.end(), iter->trainIdx)==1){matches.push_back(*iter);}
         iter++;
     }
+    // method 2: for those matches with the same trainIdx, push the best match
+    //sort(m_tmp);//TODO
+    //vector<cv::DMatch>::iterator iter;
+    //for(iter = m_tmp.begin(); iter != m_tmp.end();){
+    //    if(count(idx_tmp.begin(), idx_tmp.end(), iter->trainIdx)==1){matches.push_back(*iter);}
+    //    iter++;
+    //}
     // END YOUR CODE HERE
 
     for (auto &m: matches) {
@@ -358,7 +365,7 @@ void poseEstimation3D2D(
     assert(p3d.size() == p2d.size());
     cv::Mat r, t; // rotation and translation both in vector form
     // call Pnp solver, output in vector form
-    solvePnP(p3d, p2d, K, cv::Mat(), r, t, false); // empty distCoeff
+    solvePnPRansac(p3d, p2d, K, cv::Mat(), r, t, false); // empty distCoeff
     cv::Mat R; // rotation in matrix form
     cv::Rodrigues(r, R); // use Rodrigues to transform rotation vector to matrix
     // type transform from cv::Mat to Eigen::MatrixXd
@@ -393,13 +400,13 @@ void poseEstimation3D3D(
         W += Eigen::Vector3d(q1[i].x, q1[i].y, q1[i].z) *
              Eigen::Vector3d(q2[i].x, q2[i].y, q2[i].z).transpose();
     }
-    cout << "W = " << W << endl;
+    //cout << "W = " << W << endl;
     // SVD on W
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(W, Eigen::ComputeFullU | Eigen::ComputeFullV);
     Eigen::Matrix3d U = svd.matrixU();
     Eigen::Matrix3d V = svd.matrixV();
-    cout << "U = " << U << endl;
-    cout << "V = " << V << endl;
+    //cout << "U = " << U << endl;
+    //cout << "V = " << V << endl;
     // recover back the rotation and translation
     R21 = U * V.transpose();
     t21 = Eigen::Vector3d(p1c.x, p1c.y, p1c.z) - R21 * Eigen::Vector3d(p2c.x, p2c.y, p2c.z);
