@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 #include <string>
 #include <opencv2/core/eigen.hpp> // for cv2eigen
+#include <Eigen/SVD> // for JacobiSVD
 
 using namespace std;
 
@@ -20,6 +21,7 @@ float fx = 520.9;
 float cx = 325.1;
 float fy = 521.0;
 float cy = 249.7;
+cv::Mat K = (cv::Mat_<double>(3,3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
 
 // ORB descriptor pattern
 extern int ORB_pattern[256 * 4];
@@ -162,6 +164,15 @@ int main(int argc, char **argv) {
     Eigen::Vector3d t21_32;
     // TODO prepare the 3D-2D pairs using the depth image
     // skip those keypoints whose depth is invalid (==0)
+    assert(kpm1.size()==kpm2.size());
+    for(int i=0; i < kpm1.size(); i++){
+        unsigned int depth = first_depth_image.at<unsigned int>(kpm1[i].pt.y, kpm1[i].pt.x);
+        if (depth == 0){ continue; } // invalid depth
+        double depth_n = depth/depth_scale; // normalized depth
+        cv::Point2d p((kpm1[i].pt.x - cx)/fx, (kpm1[i].pt.y - cy)/fy); // coordinate transform
+        p3d.push_back(cv::Point3f(p.x*depth_n, p.y*depth_n, depth_n));
+        p2d.push_back(kpm2[i].pt);
+    }
     poseEstimation3D2D(p3d, p2d, R21_32, t21_32);
     cout << "estimated motion using 3D-2D method" << endl;
     cout << "Rotation from 1 to 2: \n" << R21_32 << endl;
@@ -174,6 +185,18 @@ int main(int argc, char **argv) {
     Eigen::Vector3d t21_33;
     // TODO prepare the 3D-3D pairs using the depth image
     // skip those keypoints whose depth is invalid (==0)
+    assert(kpm1.size()==kpm2.size());
+    for(int i=0; i < kpm1.size(); i++){
+        unsigned int depth1 = first_depth_image.at<unsigned int>(kpm1[i].pt.y, kpm1[i].pt.x);
+        unsigned int depth2 = first_depth_image.at<unsigned int>(kpm2[i].pt.y, kpm2[i].pt.x);
+        if ((depth1==0) || (depth2==0)){ continue; } // invalid depth
+        double depth1_n = depth1/depth_scale; // normalized depth
+        double depth2_n = depth2/depth_scale; // normalized depth
+        cv::Point2d p1((kpm1[i].pt.x - cx)/fx, (kpm1[i].pt.y - cy)/fy); // coordinate transform
+        cv::Point2d p2((kpm2[i].pt.x - cx)/fx, (kpm2[i].pt.y - cy)/fy); // coordinate transform
+        p3d1.push_back(cv::Point3f(p1.x*depth1_n, p1.y*depth1_n, depth1_n));
+        p3d2.push_back(cv::Point3f(p2.x*depth2_n, p2.y*depth2_n, depth2_n));
+    }
     poseEstimation3D3D(p3d1, p3d2, R21_33, t21_33);
     cout << "estimated motion using 3D-3D method" << endl;
     cout << "Rotation from 1 to 2: \n" << R21_33 << endl;
@@ -289,6 +312,7 @@ void bfMatch(const vector<DescType> &desc1, const vector<DescType> &desc2, vecto
     for (auto &m: matches) {
         cout << m.queryIdx << ", " << m.trainIdx << ", " << m.distance << endl;
     }
+    cout << "Total " << matches.size() << " matches" << endl;
 
     return;
 }
@@ -312,7 +336,7 @@ void poseEstimation2d2d(
     cv::Point2d p (cx, cy); // principle point
     double f = (fx + fy)/2; // focal length, but why fx != fy ?
     cv::Mat ess_mtx = findEssentialMat(p1, p2, f, p);
-    //cout << "essential_matrix is " << endl << ess_mtx << endl;
+    cout << "essential_matrix is " << endl << ess_mtx << endl;
     // recover pose from essential matrix
     cv::Mat R, t;
     recoverPose(ess_mtx, p1, p2, R, t, f, p);
@@ -331,6 +355,15 @@ void poseEstimation3D2D(
     // hints: you can call openCV's solvePnP function
 
     // START YOUR CODE HERE (~12 lines)
+    assert(p3d.size() == p2d.size());
+    cv::Mat r, t; // rotation and translation both in vector form
+    // call Pnp solver, output in vector form
+    solvePnP(p3d, p2d, K, cv::Mat(), r, t, false); // empty distCoeff
+    cv::Mat R; // rotation in matrix form
+    cv::Rodrigues(r, R); // use Rodrigues to transform rotation vector to matrix
+    // type transform from cv::Mat to Eigen::MatrixXd
+    cv::cv2eigen(R, R21);
+    cv::cv2eigen(t, t21);
     // END YOUR CODE HERE
 }
 
@@ -343,6 +376,33 @@ void poseEstimation3D3D(
     // hints: there are no icp function in openCV but instead you can just use Eigen's SVD to get the solution
 
     // START YOUR CODE HERE (~12 lines)
+    assert(p3d1.size()==p3d2.size());
+    // compute center of mass
+    cv::Point3f p1c(0,0,0), p2c(0,0,0);
+    for(auto &pt: p3d1){ p1c += pt; }
+    for(auto &pt: p3d2){ p2c += pt; }
+    p1c = cv::Point3f(cv::Vec3f(p1c)/(float)p3d1.size());
+    p2c = cv::Point3f(cv::Vec3f(p2c)/(float)p3d2.size());
+    // vector of points with center of mass removed
+    vector<cv::Point3f> q1, q2;
+    for(auto &pt: p3d1){ q1.push_back(pt - p1c); }
+    for(auto &pt: p3d2){ q2.push_back(pt - p2c); }
+    // compute W matrix, q1*q2^T
+    Eigen::Matrix3d W = Eigen::Matrix3d::Zero();
+    for(int i=0; i < p3d1.size(); i++){
+        W += Eigen::Vector3d(q1[i].x, q1[i].y, q1[i].z) *
+             Eigen::Vector3d(q2[i].x, q2[i].y, q2[i].z).transpose();
+    }
+    cout << "W = " << W << endl;
+    // SVD on W
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(W, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::Matrix3d U = svd.matrixU();
+    Eigen::Matrix3d V = svd.matrixV();
+    cout << "U = " << U << endl;
+    cout << "V = " << V << endl;
+    // recover back the rotation and translation
+    R21 = U * V.transpose();
+    t21 = Eigen::Vector3d(p1c.x, p1c.y, p1c.z) - R21 * Eigen::Vector3d(p2c.x, p2c.y, p2c.z);
     // END YOUR CODE HERE
 }
 
