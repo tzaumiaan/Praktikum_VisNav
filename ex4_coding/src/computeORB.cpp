@@ -297,7 +297,7 @@ void bfMatch(const vector<DescType> &desc1, const vector<DescType> &desc2, vecto
         if(m.distance <= d_max){
             m.queryIdx = i;
             m_tmp.push_back(m);
-            idx_tmp.push_back(m.trainIdx);
+            idx_tmp.push_back(m.trainIdx); // only used by method 1
         }
     }
     
@@ -308,12 +308,14 @@ void bfMatch(const vector<DescType> &desc1, const vector<DescType> &desc2, vecto
         iter++;
     }
     // method 2: for those matches with the same trainIdx, push the best match
-    //sort(m_tmp);//TODO
-    //vector<cv::DMatch>::iterator iter;
-    //for(iter = m_tmp.begin(); iter != m_tmp.end();){
-    //    if(count(idx_tmp.begin(), idx_tmp.end(), iter->trainIdx)==1){matches.push_back(*iter);}
-    //    iter++;
-    //}
+//  sort(m_tmp.begin(), m_tmp.end()); // sorting with minimum distance first
+//  idx_tmp.clear();
+//  for(auto &m: m_tmp){
+//      if(find(idx_tmp.begin(), idx_tmp.end(), m.trainIdx)==idx_tmp.end()){
+//          idx_tmp.push_back(m.trainIdx);
+//          matches.push_back(m);
+//      }
+//  }
     // END YOUR CODE HERE
 
     for (auto &m: matches) {
@@ -365,7 +367,7 @@ void poseEstimation3D2D(
     assert(p3d.size() == p2d.size());
     cv::Mat r, t; // rotation and translation both in vector form
     // call Pnp solver, output in vector form
-    solvePnPRansac(p3d, p2d, K, cv::Mat(), r, t, false); // empty distCoeff
+    solvePnP(p3d, p2d, K, cv::Mat(), r, t, false); // empty distCoeff
     cv::Mat R; // rotation in matrix form
     cv::Rodrigues(r, R); // use Rodrigues to transform rotation vector to matrix
     // type transform from cv::Mat to Eigen::MatrixXd
@@ -405,6 +407,7 @@ void poseEstimation3D3D(
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(W, Eigen::ComputeFullU | Eigen::ComputeFullV);
     Eigen::Matrix3d U = svd.matrixU();
     Eigen::Matrix3d V = svd.matrixV();
+    //cout << "diag = " << svd.singularValues() << endl; 
     //cout << "U = " << U << endl;
     //cout << "V = " << V << endl;
     // recover back the rotation and translation
