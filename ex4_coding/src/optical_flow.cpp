@@ -133,6 +133,10 @@ int main(int argc, char **argv) {
     cv::imshow("tracked multi level", img2_multi);
     cv::imshow("tracked by opencv", img2_CV);
     cv::waitKey(0);
+    
+    cv::imwrite("LKflow_single.png", img2_single);
+    cv::imwrite("LKflow_multi.png", img2_multi);
+    cv::imwrite("LKflow_opencv.png", img2_CV);
 
     return 0;
 }
@@ -182,6 +186,7 @@ void OpticalFlowSingleLevel(
                     double error = (double)(GetPixelValue(img1, kp.pt.x+x, kp.pt.y+y) - 
                                             GetPixelValue(img2, kp.pt.x+dx+x, kp.pt.y+dy+y));
                     Eigen::Vector2d J(0,0);  // Jacobian
+                    // neg/pos step for gradient, avoid using points outside the patch
                     double x_neg1 = (x == -half_patch_size)? 0: ((x == half_patch_size-1)? -1: -0.5);
                     double x_pos1 = (x == -half_patch_size)? 1: ((x == half_patch_size-1)?  0:  0.5);
                     double y_neg1 = (y == -half_patch_size)? 0: ((y == half_patch_size-1)? -1: -0.5);
@@ -287,22 +292,16 @@ void OpticalFlowMultiLevel(
         vector<KeyPoint> kp1_tmp;
         for(auto &kp1_: kp1){
             KeyPoint kp = kp1_;
-            kp.pt.x = kp1_.pt.x * scales[i];
-            kp.pt.y = kp1_.pt.y * scales[i];
+            kp.pt *= scales[i];
             kp1_tmp.push_back(kp);
         }
         // single layer optical flow
         succ_tmp.clear(); // reset succ_tmp
         OpticalFlowSingleLevel(pyr1[i], pyr2[i], kp1_tmp, kp2_tmp, succ_tmp, inverse);
-        // scale up kp2 for next layer
         assert(kp2_tmp.size()==kp1_tmp.size());
         assert(kp2_tmp.size()==succ_tmp.size());
-        if(i>0){ // not last layer, scale up
-            for(int j=0; j<kp2_tmp.size(); j++){
-                kp2_tmp[j].pt.x *= 1.0/pyramid_scale;
-                kp2_tmp[j].pt.y *= 1.0/pyramid_scale;
-            }
-        }
+        // scale up kp2 for next layer, if not last layer
+        if(i>0){ for(auto &kp2_: kp2_tmp){ kp2_.pt *= 1.0/pyramid_scale; }}
     }
     // last layer, push back to kp2
     for(auto &kp2_: kp2_tmp){ kp2.push_back(kp2_); }
