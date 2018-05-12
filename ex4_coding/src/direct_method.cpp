@@ -15,8 +15,8 @@ double fx = 718.856, fy = 718.856, cx = 607.1928, cy = 185.2157;
 // baseline
 double baseline = 0.573;
 // paths
-string left_file = "./left.png";
-string disparity_file = "./disparity.png";
+string left_file = "../data/left.png";
+string disparity_file = "../data/disparity.png";
 boost::format fmt_others("./%06d.png");    // other files
 
 // useful typedefs
@@ -141,6 +141,10 @@ void DirectPoseEstimationSingleLayer(
                 for (int y = -half_patch_size; y < half_patch_size; y++) {
 
                     double error = 0;
+                    //Matrix3d T_R = T21.rotationMatrix();
+                    //Vector3d T_t = T21.translation();
+                    //Vector3d p = Vector3d(px_ref[i].x, px_ref[i].y, depth_ref[i]);
+                    //Vector3d Tp = T_R*p + T_t;
 
                     Matrix26d J_pixel_xi;   // pixel to \xi in Lie algebra
                     Eigen::Vector2d J_img_pixel;    // image gradients
