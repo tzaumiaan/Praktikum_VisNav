@@ -215,7 +215,7 @@ void OpticalFlowSingleLevel(
 
             // compute update
             // TODO START YOUR CODE HERE (~1 lines)
-            Eigen::Vector2d update = H.inverse() * b;;
+            Eigen::Vector2d update = H.inverse() * b;
             // TODO END YOUR CODE HERE
 
             if (isnan(update[0])) {

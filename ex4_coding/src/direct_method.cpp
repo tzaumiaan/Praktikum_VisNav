@@ -17,7 +17,7 @@ double baseline = 0.573;
 // paths
 string left_file = "../data/left.png";
 string disparity_file = "../data/disparity.png";
-boost::format fmt_others("./%06d.png");    // other files
+boost::format fmt_others("../data/%06d.png");    // other files
 
 // useful typedefs
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 
     for (int i = 1; i < 6; i++) {  // 1~10
         cv::Mat img = cv::imread((fmt_others % i).str(), 0);
-        // DirectPoseEstimationSingleLayer(left_img, img, pixels_ref, depth_ref, T_cur_ref);    // first you need to test single layer
+        //DirectPoseEstimationSingleLayer(left_img, img, pixels_ref, depth_ref, T_cur_ref);    // first you need to test single layer
         DirectPoseEstimationMultiLayer(left_img, img, pixels_ref, depth_ref, T_cur_ref);
     }
     return 0;
@@ -132,25 +132,46 @@ void DirectPoseEstimationSingleLayer(
 
             // compute the projection in the second image
             // TODO START YOUR CODE HERE
-            float u = 0, v = 0;
+            Eigen::Matrix3d T_R = T21.rotationMatrix();
+            Eigen::Vector3d T_t = T21.translation();
+            double pz = depth_ref[i];
+            double px = pz * (px_ref[i](0) - cx)/fx;
+            double py = pz * (px_ref[i](1) - cy)/fy;
+            Eigen::Vector3d p = Eigen::Vector3d(px, py, pz);
+            Eigen::Vector3d Tp = T_R*p + T_t;
+            float u = fx*Tp(0)/Tp(2) + cx;
+            float v = fy*Tp(1)/Tp(2) + cy;
+            if (u <= half_patch_size || u >= img2.cols - half_patch_size ||
+                v <= half_patch_size || v >= img2.rows - half_patch_size) {
+                continue; // go outside, go to next point
+            }
             nGood++;
             goodProjection.push_back(Eigen::Vector2d(u, v));
 
             // and compute error and jacobian
             for (int x = -half_patch_size; x < half_patch_size; x++)
                 for (int y = -half_patch_size; y < half_patch_size; y++) {
-
-                    double error = 0;
-                    //Matrix3d T_R = T21.rotationMatrix();
-                    //Vector3d T_t = T21.translation();
-                    //Vector3d p = Vector3d(px_ref[i].x, px_ref[i].y, depth_ref[i]);
-                    //Vector3d Tp = T_R*p + T_t;
-
-                    Matrix26d J_pixel_xi;   // pixel to \xi in Lie algebra
-                    Eigen::Vector2d J_img_pixel;    // image gradients
-
+                    // error between ref(img1) and cur(img2)
+                    double error = GetPixelValue(img1, px_ref[i](0)+x, px_ref[i](1)+y) -
+                                   GetPixelValue(img2, u+x, v+y);
+                    // pixel to \xi in Lie algebra
+                    Matrix26d J_pixel_xi;
+                    double X = Tp(0), Y = Tp(1), Z = Tp(2);
+                    J_pixel_xi << -fx/Z, 0, fx*X/(Z*Z), fx*X*Y/(Z*Z), -fx - fx*X*X/(Z*Z), fx*Y/Z,
+                                  0, -fy/Z, fy*Y/(Z*Z), fy + fy*Y*Y/(Z*Z), -fy*X*Y/(Z*Z), -fy*X/Z;
+                    // image gradients
+                    Eigen::Vector2d J_img_pixel;
+                    // neg/pos step for gradient, avoid using points outside the patch
+                    double x_neg1 = (x == -half_patch_size)? 0: ((x == half_patch_size-1)? -1: -0.5);
+                    double x_pos1 = (x == -half_patch_size)? 1: ((x == half_patch_size-1)?  0:  0.5);
+                    double y_neg1 = (y == -half_patch_size)? 0: ((y == half_patch_size-1)? -1: -0.5);
+                    double y_pos1 = (y == -half_patch_size)? 1: ((y == half_patch_size-1)?  0:  0.5);
+                    J_img_pixel << (GetPixelValue(img2, u+x+x_pos1, v+y) - 
+                                    GetPixelValue(img2, u+x+x_neg1, v+y)),
+                                   (GetPixelValue(img2, u+x, v+y+y_pos1) - 
+                                    GetPixelValue(img2, u+x, v+y+y_neg1));
                     // total jacobian
-                    Vector6d J;
+                    Vector6d J = J_pixel_xi.transpose() * J_img_pixel;
 
                     H += J * J.transpose();
                     b += -error * J;
@@ -160,7 +181,7 @@ void DirectPoseEstimationSingleLayer(
         }
 
         // solve update and put it into estimation
-        Vector6d update;
+        Vector6d update = H.inverse() * b;
         T21 = Sophus::SE3d::exp(update) * T21;
 
         cost /= nGood;
@@ -213,7 +234,18 @@ void DirectPoseEstimationMultiLayer(
     // create pyramids
     vector<cv::Mat> pyr1, pyr2; // image pyramids
     // TODO START YOUR CODE HERE
-
+    cv::Mat tmp1, tmp2;
+    for (int i = 0; i < pyramids; i++) {
+        if(i==0){
+            tmp1 = img1;
+            tmp2 = img2;
+        }else{
+            pyrDown(tmp1, tmp1);
+            pyrDown(tmp2, tmp2);
+        }
+        pyr1.push_back(tmp1);
+        pyr2.push_back(tmp2);
+    }
     // END YOUR CODE HERE
 
     double fxG = fx, fyG = fy, cxG = cx, cyG = cy;  // backup the old values
@@ -225,7 +257,10 @@ void DirectPoseEstimationMultiLayer(
 
         // TODO START YOUR CODE HERE
         // scale fx, fy, cx, cy in different pyramid levels
-
+        fx = scales[level] * fxG;
+        fy = scales[level] * fyG;
+        cx = scales[level] * cxG;
+        cy = scales[level] * cyG;
         // END YOUR CODE HERE
         DirectPoseEstimationSingleLayer(pyr1[level], pyr2[level], px_ref_pyr, depth_ref, T21);
     }
