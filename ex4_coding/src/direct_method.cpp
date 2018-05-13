@@ -119,10 +119,12 @@ void DirectPoseEstimationSingleLayer(
     double cost = 0, lastCost = 0;
     int nGood = 0;  // good projections
     VecVector2d goodProjection;
+    VecVector2d goodReference;
 
     for (int iter = 0; iter < iterations; iter++) {
         nGood = 0;
         goodProjection.clear();
+        goodReference.clear();
 
         // Define Hessian and bias
         Matrix6d H = Matrix6d::Zero();  // 6x6 Hessian
@@ -147,6 +149,7 @@ void DirectPoseEstimationSingleLayer(
             }
             nGood++;
             goodProjection.push_back(Eigen::Vector2d(u, v));
+            goodReference.push_back(Eigen::Vector2d(px_ref[i](0) , px_ref[i](1)));
 
             // and compute error and jacobian
             for (int x = -half_patch_size; x < half_patch_size; x++)
@@ -198,6 +201,7 @@ void DirectPoseEstimationSingleLayer(
         lastCost = cost;
         cout << "cost = " << cost << ", good = " << nGood << endl;
     }
+    assert(goodProjection.size()==goodReference.size());
     cout << "good projection: " << nGood << endl;
     cout << "T21 = \n" << T21.matrix() << endl;
 
@@ -209,13 +213,23 @@ void DirectPoseEstimationSingleLayer(
         cv::rectangle(img1_show, cv::Point2f(px[0] - 2, px[1] - 2), cv::Point2f(px[0] + 2, px[1] + 2),
                       cv::Scalar(0, 250, 0));
     }
-    for (auto &px: goodProjection) {
-        cv::rectangle(img2_show, cv::Point2f(px[0] - 2, px[1] - 2), cv::Point2f(px[0] + 2, px[1] + 2),
+    for (int i=0; i<goodProjection.size(); i++) {
+        Eigen::Vector2d p_cur = goodProjection[i];
+        Eigen::Vector2d p_ref = goodReference[i];
+        cv::rectangle(img2_show,
+                      cv::Point2f(p_cur[0] - 2, p_cur[1] - 2),
+                      cv::Point2f(p_cur[0] + 2, p_cur[1] + 2),
                       cv::Scalar(0, 250, 0));
+        cv::line(img2_show,
+                 cv::Point2f(p_ref[0], p_ref[1]),
+                 cv::Point2f(p_cur[0], p_cur[1]),
+                 cv::Scalar(0, 250, 0));
     }
     cv::imshow("reference", img1_show);
     cv::imshow("current", img2_show);
     cv::waitKey();
+    cv::imwrite("direct_reference.png", img1_show);
+    cv::imwrite("direct_current.png", img2_show);
 }
 
 void DirectPoseEstimationMultiLayer(
