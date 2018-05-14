@@ -28,8 +28,8 @@ typedef vector<Sophus::SE3d, Eigen::aligned_allocator<Sophus::SE3d>> VecSE3;
 typedef vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> VecVec3d;
 
 // global variables
-string pose_file = "./poses.txt";
-string points_file = "./points.txt";
+string pose_file = "../data/poses.txt";
+string points_file = "../data/points.txt";
 
 // intrinsics
 float fx = 277.34;
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 
   // read images
   vector<cv::Mat> images;
-  boost::format fmt("./%d.png");
+  boost::format fmt("../data/%d.png");
   for (int i = 0; i < 7; i++)
   {
     images.push_back(cv::imread((fmt % i).str(), 0));

@@ -26,5 +26,5 @@ include_directories(${G2O_INCLUDE_DIRS})
 find_package(Ceres REQUIRED)
 include_directories(${CERES_INCLUDE_DIRS})
 
-add_executable(PBA PBA.cpp)
+add_executable(PBA src/PBA.cpp)
 target_link_libraries(PBA ${OpenCV_LIBS} ${CERES_LIBRARIES} ${Pangolin_LIBRARIES} g2o_core g2o_stuff)
