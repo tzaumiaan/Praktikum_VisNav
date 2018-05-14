@@ -164,15 +164,10 @@ void DirectPoseEstimationSingleLayer(
                                   0, -fy/Z, fy*Y/(Z*Z), fy + fy*Y*Y/(Z*Z), -fy*X*Y/(Z*Z), -fy*X/Z;
                     // image gradients
                     Eigen::Vector2d J_img_pixel;
-                    // neg/pos step for gradient, avoid using points outside the patch
-                    double x_neg1 = (x == -half_patch_size)? 0: ((x == half_patch_size-1)? -1: -0.5);
-                    double x_pos1 = (x == -half_patch_size)? 1: ((x == half_patch_size-1)?  0:  0.5);
-                    double y_neg1 = (y == -half_patch_size)? 0: ((y == half_patch_size-1)? -1: -0.5);
-                    double y_pos1 = (y == -half_patch_size)? 1: ((y == half_patch_size-1)?  0:  0.5);
-                    J_img_pixel << (GetPixelValue(img2, u+x+x_pos1, v+y) - 
-                                    GetPixelValue(img2, u+x+x_neg1, v+y)),
-                                   (GetPixelValue(img2, u+x, v+y+y_pos1) - 
-                                    GetPixelValue(img2, u+x, v+y+y_neg1));
+                    J_img_pixel << (GetPixelValue(img2, u+x+0.5, v+y) - 
+                                    GetPixelValue(img2, u+x-0.5, v+y)),
+                                   (GetPixelValue(img2, u+x, v+y+0.5) - 
+                                    GetPixelValue(img2, u+x, v+y-0.5));
                     // total jacobian
                     Vector6d J = J_pixel_xi.transpose() * J_img_pixel;
 

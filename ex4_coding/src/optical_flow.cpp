@@ -87,12 +87,12 @@ int main(int argc, char **argv) {
     // first use single level LK in the validation picture
     vector<KeyPoint> kp2_single;
     vector<bool> success_single;
-    OpticalFlowSingleLevel(img1, img2, kp1, kp2_single, success_single);
+    OpticalFlowSingleLevel(img1, img2, kp1, kp2_single, success_single, true);
 
     // then test multi-level LK
     vector<KeyPoint> kp2_multi;
     vector<bool> success_multi;
-    OpticalFlowMultiLevel(img1, img2, kp1, kp2_multi, success_multi);
+    OpticalFlowMultiLevel(img1, img2, kp1, kp2_multi, success_multi, true);
 
     // use opencv's flow for validation
     vector<Point2f> pt1, pt2;
@@ -186,24 +186,19 @@ void OpticalFlowSingleLevel(
                     double error = (double)(GetPixelValue(img1, kp.pt.x+x, kp.pt.y+y) - 
                                             GetPixelValue(img2, kp.pt.x+dx+x, kp.pt.y+dy+y));
                     Eigen::Vector2d J(0,0);  // Jacobian
-                    // neg/pos step for gradient, avoid using points outside the patch
-                    double x_neg1 = (x == -half_patch_size)? 0: ((x == half_patch_size-1)? -1: -0.5);
-                    double x_pos1 = (x == -half_patch_size)? 1: ((x == half_patch_size-1)?  0:  0.5);
-                    double y_neg1 = (y == -half_patch_size)? 0: ((y == half_patch_size-1)? -1: -0.5);
-                    double y_pos1 = (y == -half_patch_size)? 1: ((y == half_patch_size-1)?  0:  0.5);
                     if (inverse == false) {
                         // Forward Jacobian
-                        J[0] = (double)(GetPixelValue(img2, kp.pt.x+dx+x+x_neg1, kp.pt.y+dy+y) -
-                                        GetPixelValue(img2, kp.pt.x+dx+x+x_pos1, kp.pt.y+dy+y));
-                        J[1] = (double)(GetPixelValue(img2, kp.pt.x+dx+x, kp.pt.y+dy+y+y_neg1) -
-                                        GetPixelValue(img2, kp.pt.x+dx+x, kp.pt.y+dy+y+y_pos1));
+                        J[0] = (double)(GetPixelValue(img2, kp.pt.x+dx+x-0.5, kp.pt.y+dy+y) -
+                                        GetPixelValue(img2, kp.pt.x+dx+x+0.5, kp.pt.y+dy+y));
+                        J[1] = (double)(GetPixelValue(img2, kp.pt.x+dx+x, kp.pt.y+dy+y-0.5) -
+                                        GetPixelValue(img2, kp.pt.x+dx+x, kp.pt.y+dy+y+0.5));
                     } else {
                         // Inverse Jacobian
                         // NOTE this J does not change when dx, dy is updated, so we can store it and only compute error
-                        J[0] = (double)(GetPixelValue(img1, kp.pt.x+x+x_neg1, kp.pt.y+y) -
-                                        GetPixelValue(img1, kp.pt.x+x+x_pos1, kp.pt.y+y));
-                        J[1] = (double)(GetPixelValue(img1, kp.pt.x+x, kp.pt.y+y+y_neg1) -
-                                        GetPixelValue(img1, kp.pt.x+x, kp.pt.y+y+y_pos1));
+                        J[0] = (double)(GetPixelValue(img1, kp.pt.x+x-0.5, kp.pt.y+y) -
+                                        GetPixelValue(img1, kp.pt.x+x+0.5, kp.pt.y+y));
+                        J[1] = (double)(GetPixelValue(img1, kp.pt.x+x, kp.pt.y+y-0.5) -
+                                        GetPixelValue(img1, kp.pt.x+x, kp.pt.y+y+0.5));
                     }
 
                     // compute H, b and set cost;
