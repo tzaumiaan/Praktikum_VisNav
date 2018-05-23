@@ -217,10 +217,10 @@ void computeAngle(const cv::Mat &image, vector<cv::KeyPoint> &keypoints) {
         double m01 = 0, m10 = 0;
         for(int y = -half_patch_size; y < half_patch_size; y++){
             int row = kp.pt.y + y;
-            if(row < 0 || row >= image.rows) continue;
+            if(row < 0 || row >= image.rows) break;
             for(int x = -half_patch_size; x < half_patch_size; x++){
                 int col = kp.pt.x + x;
-                if(col < 0 || col >= image.cols) continue;
+                if(col < 0 || col >= image.cols) break;
                 m01 += (double)(image.at<uchar>(row, col)) * y;
                 m10 += (double)(image.at<uchar>(row, col)) * x;
             }
