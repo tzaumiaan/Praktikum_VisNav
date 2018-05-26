@@ -19,7 +19,7 @@
 \newcommand{\docAuthor}{Min-An Chao (03681062)}
 \newcommand{\docAuthorDept}{TUM MS Informatics}
 \newcommand{\docAuthorEmail}{ga83fok@mytum.de}
-\newcommand{\docDate}{13.05.2018}
+\newcommand{\docDate}{24.05.2018}
 
 \pagestyle{fancy}
 \fancyhf{}
@@ -68,187 +68,254 @@
     
     \section{Feature based visual odometry}
     \textsf{\textbf{Task 1}}
+    The feature points are labeled with angles,
+    as shown in Fig.~\ref{fig:feat1}.
+    The \texttt{atan()} function is used
+    to compute the angle,
+    along with wrap-around check for negative $m_{10}$
+    and radius-to-degree conversion.
+    (\texttt{OpenCV} use degree as unit for plotting.)
     
-
-    \section{Batch MAP}
+    \begin{figure}[!h]
+        \centering
+        \includegraphics[height=6cm]{fig/feat1.png}
+        \caption{Feature points with angles labeled}
+        \label{fig:feat1}
+    \end{figure}
     
-    \textsf{\textbf{Task 1}}
-    By taking $k=0,1,2$ into the system model,
-    We can obtain
-    \begin{eqnarray}\label{eq:h_matrix}
-      \mtx{H} =
-      \begin{pmatrix}[r]
-        -1 &  1 &  0 & 0 \\
-         0 & -1 &  1 & 0 \\
-         0 &  0 & -1 & 1 \\
-         0 &  1 &  0 & 0 \\
-         0 &  0 &  1 & 0 \\
-         0 &  0 &  0 & 1
-      \end{pmatrix}.
-    \end{eqnarray}
-
     \textsf{\textbf{Task 2}}
-    From the system model and Eq.~\ref{eq:h_matrix},
-    we have,
-    \begin{eqnarray}\label{eq:n_vector}
-      \vct{e} 
-      = \vct{z} - \mtx{H}\vct{x}
-      = \begin{pmatrix} v_1 \\ v_2 \\ v_3 \\ y_1 \\ y_2 \\ y_3 \end{pmatrix}
-          -  \begin{pmatrix} x_1 - x_0 \\ x_2 - x_1 \\ x_3 - x_2 \\ x_1 \\ x_2 \\ x_3 \end{pmatrix}
-      = \begin{pmatrix} w_1 \\ w_2 \\ w_3 \\ n_1 \\ n_2 \\ n_3 \end{pmatrix}
-      \sim \set{N}(\vct{0},\mtx{W}).
-    \end{eqnarray}
-    Obviously, if the noise is independent of each other, 
-    we have
-    \begin{eqnarray}\label{eq:n_vector}
-      \mtx{W} = \fnc{diag}(Q,Q,Q,R,R,R),
-    \end{eqnarray}
-    otherwise $\mtx{W}$ could be any covariance matrix with
-    this diagonal terms and other nonzero entries.
-
-    \textsf{\textbf{Task 3}}
-    Yes, if the noise is uncorrelated, then it is independent.
-    In this case there is only one exact solution of $\mtx{W}$.
-
-    \section{Iterative Curve Fitting}
-    \textsf{\textbf{Task 1}}
-    The derivatives of error to parameters could be obtained by
-    \begin{eqnarray}\label{eq:cf_j}
-      \vct{J}_i
-      = \begin{pmatrix}
-          \frac{\partial e_i}{\partial a} \\
-          \frac{\partial e_i}{\partial b} \\
-          \frac{\partial e_i}{\partial c}
-        \end{pmatrix}
-      = \begin{pmatrix}
-          -f(x_i) \cdot x_i^2 \\
-          -f(x_i) \cdot x_i \\
-          -f(x_i) 
-        \end{pmatrix},
-    \end{eqnarray}
-    where
-    \begin{eqnarray}\label{eq:cf_f}
-      f(x_i) = \fnc{exp}(a x_i^2 + b x_i + c).
-    \end{eqnarray}
-    Then we have
-    \begin{eqnarray}\label{eq:cf_f}
-      \mtx{H} &=& \sum_i \vct{J}_i \vct{J}_i^T, \nonumber\\
-      \vct{b} &=& \sum_i - e_i \vct{J}_i, \nonumber\\
-      (\Delta a, \Delta b, \Delta c)^T &=& \mtx{H}^{-1} \vct{b}.
-    \end{eqnarray}
-    By implementing this, we can see the results:
+    Based on the rotation angle of each feature point,
+    we compute the rotated point based on the sample points
+    given by \texttt{ORB\_pattern}.
+    The rotated points outside the image will be marked as 
+    "bad" points, and below shows the number of such
+    bad points.
+    Other good points, 
+    where we use to get the pixel values in two images,
+    will come up of a corresponding Boolean value,
+    labeling if pixel from image 1 is larger than another.
     \begin{lstlisting}[frame=single,numbers=left]
-total cost: 3.19575e+06
-total cost: 376785
-total cost: 35673.6
-total cost: 2195.01
-total cost: 174.853
-total cost: 102.78
-total cost: 101.937
-total cost: 101.937
-total cost: 101.937
-total cost: 101.937
-total cost: 101.937
-total cost: 101.937
-cost: 101.937, last cost: 101.937
-estimated abc = 0.890912, 2.1719, 0.943629
+bad/total: 41/638
+bad/total: 6/595
     \end{lstlisting}
     
-    \textsf{\textbf{Task 2}}
-    With \texttt{Google Ceres},
-    first we have to implement the $e_i = y_i - f(x_i)$ part in
-    the overloaded \texttt{()} function, \emph{i.e.}
-    \texttt{operator()(const T *const abc, T *residual) const},
-    inside the \texttt{CURVE\_FITTING\_COST} object.
-    then we instantiate a \texttt{Problem} object,
-    adding the cost function of the \texttt{CURVE\_FITTING\_COST} object
-    into a \texttt{CostFunction} object
-    by \texttt{AutoDiffCostFunction()} method,
-    and using \texttt{Problem::AddResidualBlock()} method
-    to add the residual block we have implemented inside
-    the overloaded \texttt{()} function.
-    Finally by the solver setups shown in lecture slides 
-    and by the solver function call 
-    we have the results:
-    \begin{lstlisting}[frame=single,numbers=left]
-iter      cost      cost_change  |gradient|   |step|    ... total_time
-   0  1.597873e+06    0.00e+00    3.52e+06   0.00e+00   ...   1.17e-02
-   1  1.884440e+05    1.41e+06    4.86e+05   9.88e-01   ...   1.66e-02
-   2  1.784821e+04    1.71e+05    6.78e+04   9.89e-01   ...   1.99e-02
-   3  1.099631e+03    1.67e+04    8.58e+03   1.10e+00   ...   2.29e-02
-   4  8.784938e+01    1.01e+03    6.53e+02   1.51e+00   ...   2.58e-02
-   5  5.141230e+01    3.64e+01    2.72e+01   1.13e+00   ...   2.79e-02
-   6  5.096862e+01    4.44e-01    4.27e-01   1.89e-01   ...   2.98e-02
-   7  5.096851e+01    1.10e-04    9.53e-04   2.84e-03   ...   3.17e-02
-Ceres Solver Report: Iterations: 8, Initial cost: 1.597873e+06, 
-Final cost: 5.096851e+01, Termination: CONVERGENCE
-estimated a,b,c = 0.890908, 2.1719, 0.943628
-    \end{lstlisting}
-
-    \section{Camera Pose Estimation by Gauss-Newton Method}
-    \textsf{\textbf{Task 1}}
-    Suppose the rotation matrix of 
-    the estimated pose $\mtx{T}_k$ is $\mtx{R}_k$
-    and the translation part is $\vct{t}_k$,
-    where $k$ stands for the iteration count.
-    The projected position of 3D points $\vct{p}_i$ would be
-    \begin{eqnarray}\label{eq:proj_pos}
-      \vct{q}_{k,i} &=& \mtx{R}_{k-1} \vct{p}_i + \vct{t}_{k-1} \nonumber \\
-      &=& (x_{k,i}, y_{k,i}, z_{k,i})^T.
-    \end{eqnarray}
-    The re-projection error $\vct{e}_{k,i}$ is obtained
-    by applying the intrinsic matrix to the projected position
-    with the normalization term $z_{k,i}$, or equally, ${q^{'}_{k,i}}^{(2)}$,
-    which is,
-    \begin{eqnarray}
-      \vct{q}^{'}_{k,i} &=& \mtx{K}\vct{q}_{k,i}, \nonumber \\
-      \vct{e}_{k,i} &=& \vct{u}_i -
-        \frac{1}{ z_{k,i}} \cdot ({q^{'}_{k,i}}^{(0)}, {q^{'}_{k,i}}^{(1)})^T,
-    \end{eqnarray}
-
-    \textsf{\textbf{Task 2}}
-    The Jacobian matrix of error could be derived,
-    based on the slides,
-    as
-    \begin{eqnarray}
-      \mtx{J}_{k,i} = \begin{pmatrix}
-        -\frac{f_x}{z_{k,i}} & 0 & \frac{f_x  x_{k,i}}{z_{k,i}^2} & \frac{f_x  x_{k,i} y_{k,i}}{z_{k,i}^2} & -f_x - \frac{f_x  x_{k,i}^2}{z_{k,i}^2} & \frac{f_x y_{k,i}}{z_{k,i}} \\
-        0 & -\frac{f_y}{z_{k,i}} & \frac{f_y  y_{k,i}}{z_{k,i}^2} & f_y + \frac{f_y  y_{k,i}^2}{z_{k,i}^2} & -\frac{f_y x_{k,i} y_{k,i}}{z_{k,i}^2} & -\frac{f_y x_{k,i}}{z_{k,i}} 
-      \end{pmatrix},
-    \end{eqnarray}
-    where $x_{k,i}, y_{k,i}, z_{k,i}$ comes from Eq.~\ref{eq:proj_pos},
-    and $f_x = K_{0,0}, f_y = K_{1,1}$.
-
     \textsf{\textbf{Task 3}}
-    Updates on estimation pose are made iterative by
-    \begin{eqnarray}
-      \mtx{H}_k &=& \sum_i \vct{J}_{k,i}^T \vct{J}_{k,i}, \nonumber\\
-      \vct{b}_k &=& \sum_i - \vct{J}_{k,i}^T \vct{e}_{k,i} , \nonumber\\
-      \Delta \mtx{T}_k &=& \mtx{H}_k^{-1} \vct{b}_k, \nonumber\\
-      \mtx{T}_k  &=& \exp((\Delta \mtx{T}_k)^{\wedge})  \mtx{T}_{k-1}.
-    \end{eqnarray}
-    $\Delta \mtx{T}_k$ here is expressed as a $\mathfrak{se}(3)$ 6-by-1 vector.
-    Updates can be applied by calculating its exponential map, 
-    and multiplying it to the previous pose $\mtx{T}_{k-1}$.
+    By computing the nearest point in image 2 for each point in image 1,
+    we obtain a vector matches stored as \texttt{matches}
+    with data type \texttt{vector<cv::DMatch>}.
+    However, there will be some 2 or more matches in the vector \texttt{matches},
+    that share the same point in image 2 as the nearest point.
+    We can mark such matches as conflicts.
+    Since the matches should be exclusively one-to-one in 2 images,
+    we delete all such conflicts inside the vector \texttt{matches}.
+    After this we obtain what we expected, as shown in Fig.~\ref{fig:matches}.
+    
+    \begin{figure}[!h]
+        \centering
+        \includegraphics[height=6cm]{fig/matches.png}
+        \caption{Matches made by brute force searching from feature points}
+        \label{fig:matches}
+    \end{figure}
+
+    \textsf{\textbf{Task 4}}
+    2D-2D pose estimation can be done by \texttt{OpenCV} functions
+    \texttt{findEssentialMat()} and \texttt{recoverPose()}.
     The results are shown below.
     \begin{lstlisting}[frame=single,numbers=left]
-points: 76
-iteration 0 cost=45538.2
-iteration 1 cost=413.209
-iteration 2 cost=302.649
-iteration 3 cost=301.357
-iteration 4 cost=301.351
-iteration 5 cost=301.351
-iteration 6 cost=301.351
-iteration 7 cost=301.351
-iteration 8 cost=301.351
-cost: 301.351, last cost: 301.351
-estimated pose: 
-  0.997866 -0.0516724  0.0399128  -0.127227
- 0.0505959    0.99834  0.0275274 -0.0075068
--0.0412689 -0.0254492   0.998824  0.0613861
-         0          0          0          1
+essential_matrix is 
+[-0.01689316757952954, -0.4001360984609538, -0.05206126359774105;
+ 0.382602780486801, -0.03388384497843067, 0.5922787440926547;
+ 0.0145439817260907, -0.5814930982650205, -0.0149159111406146]
+estimated motion using 2D-2D method
+Rotation from 1 to 2: 
+  0.998461 -0.0461534   0.030742
+ 0.0453012   0.998585  0.0278645
+-0.0319845 -0.0264289   0.999139
+translation from 1 to 2: 
+ -0.820848 -0.0578427   0.568211
     \end{lstlisting}
+
+    After processing depth information from RGB-D camera,
+    we obtain the 3D information of keypoints,
+    where $(u,v)$ is transformed to $(x,y)$ coordinate
+    and then applied with depth information to be
+    $(x',y',z') = (xd, yd, d)$.
+    With \texttt{OpenCV} functions
+    \texttt{solvePnP()} and \texttt{Rodrigues()}.
+    The results are shown below.
+    Note the rotation matrix is similar to 2D-2D result,
+    with translation only scaled down compared to 2D-2D.
+    \begin{lstlisting}[frame=single,numbers=left]
+estimated motion using 3D-2D method
+Rotation from 1 to 2: 
+  0.998263 -0.0504054  0.0304982
+   0.04982   0.998565  0.0196607
+-0.0314454 -0.0181071   0.999341
+translation from 1 to 2: 
+  -0.11344 0.00391171  0.0685656
+    \end{lstlisting}
+
+    Finally, we transform keypoints from both image 1 and 2
+    with the same procedures to obtain their 3D information.
+    Subtracted with mass center $\vct{\bar{p}}_1$ and $\vct{\bar{p}}_2$ for each array,
+    we have $\vct{q}_1^{(i)}$ and $\vct{q}_2^{(i)}$, and
+    we compute $\mtx{W} = \sum_i \vct{q}_1^{(i)} {\vct{q}_2^{(i)}}^T$.
+    Then by SVD decomposition of $\mtx{W} = \mtx{US}\mtx{V}^T$,
+    we get rotation $\mtx{R} = \mtx{U}\mtx{V}^T$
+    and $\vct{t} = \vct{\bar{p}}_1 - \mtx{R}\vct{\bar{p}}_2$.
+    The results are shown below.
+    Perhaps due to the noise in depth information, 
+    the results do not look so similar.
+    \begin{lstlisting}[frame=single,numbers=left]
+estimated motion using 3D-3D method
+Rotation from 1 to 2: 
+  0.995954  0.0787748 -0.0432516
+-0.0707982   0.984202   0.162275
+ 0.0553515  -0.158556   0.985797
+translation from 1 to 2: 
+ 0.116904 -0.289467 0.0741315
+    \end{lstlisting}
+
+    \section{LK optical flow}
+    
+    \textsf{\textbf{Task 1}}
+    The Jacobian matrix is derived from error related to the motion as
+    \begin{eqnarray}\label{eq:lk_fwd}
+      \vct{J}_i = \begin{pmatrix}
+        -\frac{\partial I_2(x_i + \Delta x_i, y_i + \Delta y_i)}{\partial x_i} &
+        -\frac{\partial I_2(x_i + \Delta x_i, y_i + \Delta y_i)}{\partial y_i} 
+      \end{pmatrix}^T,
+    \end{eqnarray}
+    along with 
+    \begin{eqnarray}
+      \mtx{H} &=& \sum_i \vct{J}_{i} \vct{J}_{i}^T, \nonumber\\
+      \vct{b} &=& \sum_i - e_i \vct{J}_{i} , \nonumber\\
+      (\partial x_i, \partial y_i)^T &=& \mtx{H}^{-1} \vct{b}. 
+    \end{eqnarray}
+    
+    \textsf{\textbf{Task 2}}
+    We change the optimization object in Eq.~\ref{eq:lk_fwd}
+    to derive an inverse version:
+    \begin{eqnarray}\label{eq:lk_inv}
+      \vct{J}_i = \begin{pmatrix}
+        -\frac{\partial I_1(x_i , y_i)}{\partial x_i} &
+        -\frac{\partial I_1(x_i , y_i)}{\partial y_i} 
+      \end{pmatrix}^T.
+    \end{eqnarray}
+    The result of single layer optical flow is shown in Fig.~\ref{fig:lkflow_single}.
+    
+    \begin{figure}[!h]
+        \centering
+        \includegraphics[height=6cm]{fig/LKflow_single.png}
+        \caption{LK flow using single layer}
+        \label{fig:lkflow_single}
+    \end{figure}
+    
+    \textsf{\textbf{Task 3}}
+    In multi-layer method,
+    coarse-to-fine means we downsample the original image to get a coarse optical flow first,
+    then upsample back the candidates to gradually refine our optical flow estimates.
+    The pyramid method used in pixel level or feature point level is basically the same.
+    Only the projection needs to be done if feature points are stored in 3D world coordinate.
+    
+    The results are in Fig.~\ref{fig:lkflow_multi},
+    with multi-layer LK flow slightly better than \texttt{OpenCV} implementation.
+
+    \begin{figure}[!ht]
+        \centering
+        \subfloat[multi-layer LK]{
+            \includegraphics[height=5cm]{fig/LKflow_multi.png}
+        }
+        \subfloat[\texttt{OpenCV} library]{
+            \includegraphics[height=5cm]{fig/LKflow_opencv.png}
+        }
+        \caption{LK flow results}
+        \label{fig:lkflow_multi}
+    \end{figure}
+
+    \section{Direct method}
+    
+    \textsf{\textbf{Task 1}}
+    The $6 \times 1$ Jacobian matrix can be factorizes as two part,
+    the 3D-2D projection part $2 \times 6$ $\mtx{J}_{\xi}$,
+    and the image pixel gradient part $2 \times 1$ $\mtx{J}_{p}$.
+    \begin{eqnarray}\label{eq:lk_fwd}
+      \mtx{J}_i &=& \mtx{J}_{\xi,i}^T \mtx{J}_{p,i}, \nonumber\\
+      \mtx{J}_{\xi,i} &=& \begin{pmatrix}
+        -\frac{f_x}{z_{i}} & 0 & \frac{f_x  x_{i}}{z_{i}^2} & \frac{f_x  x_{i} y_{i}}{z_{i}^2} & -f_x - \frac{f_x  x_{i}^2}{z_{i}^2} & \frac{f_x y_{i}}{z_{i}} \\
+        0 & -\frac{f_y}{z_{i}} & \frac{f_y  y_{i}}{z_{i}^2} & f_y + \frac{f_y  y_{i}^2}{z_{i}^2} & -\frac{f_y x_{i} y_{i}}{z_{i}^2} & -\frac{f_y x_{i}}{z_{i}} 
+      \end{pmatrix}, \nonumber\\
+      \mtx{J}_{p,i} &=& \begin{pmatrix}
+        \frac{\partial I_{\text{cur}}(u_i , v_i)}{\partial u_i} &
+        \frac{\partial I_{\text{cur}}(u_i , v_i)}{\partial v_i} 
+      \end{pmatrix}^T, \nonumber\\
+      \text{where } (u_i,v_i) &=&
+      (\frac{x_i}{z_i}\cdot f_x + c_x, \frac{y_i}{z_i}\cdot f_y + c_y).
+    \end{eqnarray}
+    
+    The size of window, or patch, is chosen to be $4 \times 4$ in this task.
+    However it also makes sense to just choose a single pixel,
+    just with weaker ability to fight against noise and sudden illumination changes.
+    
+    \textsf{\textbf{Task 2}}
+    The results are shown with trajectories of sample points in Fig.~\ref{fig:direct}
+    for each frame. The pose shift portions from the first to the fifth
+    image are shown as follows.
+    \begin{lstlisting}[frame=single,numbers=left]
+t1 = (-0.00153993, 0.00281099, -0.72449)^T
+t2 = (0.0072663, -0.00159868, -1.47007)^T
+t3 = (0.00767712, 0.00385026, -2.20899)^T
+t4 = (0.010734, 0.00301489, -2.99649)^T
+t5 = (0.0171474, -0.00840279, -3.78821)^T
+    \end{lstlisting}
+
+    \begin{figure}[!ht]
+        \centering
+        \subfloat[Reference]{\includegraphics[height=3cm]{fig/direct_reference.png}} \vfill
+        \subfloat[Current-1]{\includegraphics[height=3cm]{fig/direct_current1.png}}\vfill
+        \subfloat[Current-2]{\includegraphics[height=3cm]{fig/direct_current2.png}}\vfill
+        \subfloat[Current-3]{\includegraphics[height=3cm]{fig/direct_current3.png}}\vfill
+        \subfloat[Current-4]{\includegraphics[height=3cm]{fig/direct_current4.png}}\vfill
+        \subfloat[Current-5]{\includegraphics[height=3cm]{fig/direct_current5.png}}
+        \caption{Results of direct method}
+        \label{fig:direct}
+    \end{figure}
+
+%   Obviously, if the noise is independent of each other, 
+%   we have
+%   \begin{eqnarray}\label{eq:n_vector}
+%     \mtx{W} = \fnc{diag}(Q,Q,Q,R,R,R),
+%   \end{eqnarray}
+%   otherwise $\mtx{W}$ could be any covariance matrix with
+%   this diagonal terms and other nonzero entries.
+%
+%   
+%
+%   \textsf{\textbf{Task 2}}
+%   The Jacobian matrix of error could be derived,
+%   based on the slides,
+%   as
+%   \begin{eqnarray}
+%     \mtx{J}_{k,i} = \begin{pmatrix}
+%       -\frac{f_x}{z_{k,i}} & 0 & \frac{f_x  x_{k,i}}{z_{k,i}^2} & \frac{f_x  x_{k,i} y_{k,i}}{z_{k,i}^2} & -f_x - \frac{f_x  x_{k,i}^2}{z_{k,i}^2} & \frac{f_x y_{k,i}}{z_{k,i}} \\
+%       0 & -\frac{f_y}{z_{k,i}} & \frac{f_y  y_{k,i}}{z_{k,i}^2} & f_y + \frac{f_y  y_{k,i}^2}{z_{k,i}^2} & -\frac{f_y x_{k,i} y_{k,i}}{z_{k,i}^2} & -\frac{f_y x_{k,i}}{z_{k,i}} 
+%     \end{pmatrix},
+%   \end{eqnarray}
+%   where $x_{k,i}, y_{k,i}, z_{k,i}$ comes from Eq.~\ref{eq:proj_pos},
+%   and $f_x = K_{0,0}, f_y = K_{1,1}$.
+%
+%   \textsf{\textbf{Task 3}}
+%   Updates on estimation pose are made iterative by
+%   \begin{eqnarray}
+%     \mtx{H}_k &=& \sum_i \vct{J}_{k,i}^T \vct{J}_{k,i}, \nonumber\\
+%     \vct{b}_k &=& \sum_i - \vct{J}_{k,i}^T \vct{e}_{k,i} , \nonumber\\
+%     \Delta \mtx{T}_k &=& \mtx{H}_k^{-1} \vct{b}_k, \nonumber\\
+%     \mtx{T}_k  &=& \exp((\Delta \mtx{T}_k)^{\wedge})  \mtx{T}_{k-1}.
+%   \end{eqnarray}
+%   $\Delta \mtx{T}_k$ here is expressed as a $\mathfrak{se}(3)$ 6-by-1 vector.
+%   Updates can be applied by calculating its exponential map, 
+%   and multiplying it to the previous pose $\mtx{T}_{k-1}$.
+%   The results are shown below.
 
 %% template for figures
 %   \begin{figure}[!h]
