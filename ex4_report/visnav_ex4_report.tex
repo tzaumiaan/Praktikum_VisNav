@@ -281,41 +281,20 @@ t5 = (0.0171474, -0.00840279, -3.78821)^T
         \label{fig:direct}
     \end{figure}
 
-%   Obviously, if the noise is independent of each other, 
-%   we have
-%   \begin{eqnarray}\label{eq:n_vector}
-%     \mtx{W} = \fnc{diag}(Q,Q,Q,R,R,R),
-%   \end{eqnarray}
-%   otherwise $\mtx{W}$ could be any covariance matrix with
-%   this diagonal terms and other nonzero entries.
-%
-%   
-%
-%   \textsf{\textbf{Task 2}}
-%   The Jacobian matrix of error could be derived,
-%   based on the slides,
-%   as
-%   \begin{eqnarray}
-%     \mtx{J}_{k,i} = \begin{pmatrix}
-%       -\frac{f_x}{z_{k,i}} & 0 & \frac{f_x  x_{k,i}}{z_{k,i}^2} & \frac{f_x  x_{k,i} y_{k,i}}{z_{k,i}^2} & -f_x - \frac{f_x  x_{k,i}^2}{z_{k,i}^2} & \frac{f_x y_{k,i}}{z_{k,i}} \\
-%       0 & -\frac{f_y}{z_{k,i}} & \frac{f_y  y_{k,i}}{z_{k,i}^2} & f_y + \frac{f_y  y_{k,i}^2}{z_{k,i}^2} & -\frac{f_y x_{k,i} y_{k,i}}{z_{k,i}^2} & -\frac{f_y x_{k,i}}{z_{k,i}} 
-%     \end{pmatrix},
-%   \end{eqnarray}
-%   where $x_{k,i}, y_{k,i}, z_{k,i}$ comes from Eq.~\ref{eq:proj_pos},
-%   and $f_x = K_{0,0}, f_y = K_{1,1}$.
-%
-%   \textsf{\textbf{Task 3}}
-%   Updates on estimation pose are made iterative by
-%   \begin{eqnarray}
-%     \mtx{H}_k &=& \sum_i \vct{J}_{k,i}^T \vct{J}_{k,i}, \nonumber\\
-%     \vct{b}_k &=& \sum_i - \vct{J}_{k,i}^T \vct{e}_{k,i} , \nonumber\\
-%     \Delta \mtx{T}_k &=& \mtx{H}_k^{-1} \vct{b}_k, \nonumber\\
-%     \mtx{T}_k  &=& \exp((\Delta \mtx{T}_k)^{\wedge})  \mtx{T}_{k-1}.
-%   \end{eqnarray}
-%   $\Delta \mtx{T}_k$ here is expressed as a $\mathfrak{se}(3)$ 6-by-1 vector.
-%   Updates can be applied by calculating its exponential map, 
-%   and multiplying it to the previous pose $\mtx{T}_{k-1}$.
-%   The results are shown below.
+    \textsf{\textbf{Task 3}}
+
+    We can use the similar concepts of inverse and compositional method
+    from optical flow as well
+    since we compute directly based on pixel points.
+    The computation $\mtx{J}_{\xi}$ is invariant to the patch,
+    thus should be cached for all pixels in a patch.
+    Since we use 3D-2D projection to obtain possible pixel value of a point,
+    there is no necessary to be some points with strong features like corners.
+    So direct method could be useful for sequences lack of feature points,
+    or images that features are difficult to extracted,
+    and provides fast tracking ability.
+    However its weak spot would be the cases like sudden change of movement
+    or illumination between 2 frames.
 
 %% template for figures
 %   \begin{figure}[!h]
