@@ -115,7 +115,7 @@ class bal_dataset
     }
     
     // read in from file
-    void read_from_text(const string infile){
+    void read_from_text(const string& infile){
       cout << "Loading BAL dataset " << infile << endl;
       ifstream ifs(infile.c_str());
       int numCameras, numPoints, numObservations;
@@ -186,7 +186,7 @@ class bal_dataset
     }// end of read_from_text()
     
     // write to VRML
-    void write_to_vrml(const string outfile){
+    void write_to_vrml(const string& outfile){
       assert(outfile.size()>0);
       ofstream fout(outfile.c_str()); // loadable with meshlab
       fout 
@@ -211,6 +211,39 @@ class bal_dataset
       fout << "    ]\n" << "  }\n" << "}\n" << "  }\n";
     } // end of write_to_vrml()
     
+    // write to PLY
+    void write_to_ply(const string outfile){
+      assert(outfile.size()>0);
+      ofstream fout(outfile.c_str()); // loadable with meshlab
+      fout
+        << "ply\n" 
+        << "format ascii 1.0\n"
+        << "element vertex " << cameras.size() + points.size() << '\n'
+        << "property float x\n"
+        << "property float y\n"
+        << "property float z\n"
+        << "property uchar red\n"
+        << "property uchar green\n"
+        << "property uchar blue\n"
+        << "end_header" << std::endl;
+      
+      // Export extrinsic data (i.e. camera centers) as green points.
+      double cam[9], aa[3], ct[3]; 
+      for(int i = 0; i < cameras.size(); i++){
+        for(int j = 0; j<9; j++){ cam[j] = (double)cameras[i]->estimate()[j]; }
+        cam_to_aa_ct(cam, aa, ct);
+        fout << ct[0] << ' ' << ct[1] << ' ' << ct[2] << " 0 255 0\n";
+      }
+      
+      // Export the structure (i.e. 3D Points) as white points.
+      for(int i = 0; i < points.size(); i++){
+        for(int j = 0; j < 3; j++){ fout << (double)points[i]->estimate()[j] << ' '; }
+        fout << "255 255 255\n";
+      }
+      
+      fout.close();
+    }
+
     void init_opt(){
       typedef g2o::BlockSolver< g2o::BlockSolverTraits<9, 3> >  BalBlockSolver;
       typedef g2o::LinearSolverCholmod<BalBlockSolver::PoseMatrixType> BalLinearSolver;
