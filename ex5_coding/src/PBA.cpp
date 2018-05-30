@@ -61,9 +61,9 @@ public:
 
   ~VertexSophus() {}
 
-  bool read(std::istream &is) {}
+  bool read(std::istream &is){return 0;}
 
-  bool write(std::ostream &os) const {}
+  bool write(std::ostream &os) const{return 0;}
 
   virtual void setToOriginImpl()
   {
@@ -97,15 +97,42 @@ public:
   virtual void computeError() override
   {
     // TODO START YOUR CODE HERE
+    Eigen::Matrix3d K;
+    K << fx, 0, cx, 0, fy, cy, 0, 0, 1;
     // compute projection error ...
+    const g2o::VertexSBAPointXYZ* points = static_cast<const g2o::VertexSBAPointXYZ*>(_vertices[0]);
+    const VertexSophus* poses = static_cast<const VertexSophus*>(_vertices[1]);
+    const Sophus::SE3d T = poses->estimate();
+    Eigen::Vector3d pt_orig = points->estimate();
+    Eigen::Vector3d pt_proj = T * pt_orig.matrix();
+    pt_proj = K*pt_proj;
+    double x = pt_proj[0]/pt_proj[2], y = pt_proj[1]/pt_proj[2];
+    // boundary check
+    if( x<2 || x>=(targetImg.cols-2) ||
+        y<2 || y>=(targetImg.rows-2) 
+    ){
+      // outside boundary, error invalid
+      for(int n=0; n<16; n++){ _error[n] = 0.0; }
+    }else{
+      // compute error from projection and original
+      int n = 0;
+      for(int i=-2; i<2; i++){
+        for(int j=-2; j<2; j++){
+          double i_orig = origColor[n];
+          double i_proj = GetPixelValue(targetImg, x+i, y+j);
+          _error[n] = abs(i_orig - i_proj);
+          n++;
+        }
+      }
+    }
     // END YOUR CODE HERE
   }
 
   // Let g2o compute jacobian for you
 
-  virtual bool read(istream &in) {}
+  virtual bool read(istream &in){}
 
-  virtual bool write(ostream &out) const {}
+  virtual bool write(ostream &out) const{}
 
 private:
   cv::Mat targetImg;  // the target image
@@ -180,7 +207,55 @@ int main(int argc, char **argv)
 
   // TODO add vertices, edges into the graph optimizer
   // START YOUR CODE HERE
-
+  Eigen::Matrix3d K;
+  K << fx, 0, cx, 0, fy, cy, 0, 0, 1;
+  int id = 0;
+  // add camera poses
+  vector<VertexSophus*> poses_opt;
+  for(int i=0; i<images.size(); i++){
+    VertexSophus* p = new VertexSophus();
+    p->setId(id); id++;
+    p->setEstimate(poses[i]);
+    poses_opt.push_back(p);
+    optimizer.addVertex(p);
+  }
+  // add points
+  vector<g2o::VertexSBAPointXYZ*> points_opt;
+  for(int i=0; i<points.size(); i++){
+    g2o::VertexSBAPointXYZ* p = new g2o::VertexSBAPointXYZ();
+    p->setId(id); id++;
+    p->setEstimate(points[i]);
+    p->setMarginalized(true);
+    points_opt.push_back(p);
+    optimizer.addVertex(p);
+  }
+  // add edges
+  int edge_id = 0;
+  for(int i=0; i<images.size(); i++){
+    for(int j=0; j<points.size(); j++){
+      Eigen::Matrix3d R = poses[i].rotationMatrix();
+      Eigen::Vector3d t = poses[i].translation();
+      Eigen::Vector3d pt_proj = R * points[j].matrix() + t;
+      pt_proj = K*pt_proj;
+      int u = pt_proj[0]/pt_proj[2], v = pt_proj[1]/pt_proj[2];
+      if( u < 2 || u >= (images[i].cols - 2) ||
+          v < 2 || v >= (images[i].rows - 2)
+      ){
+        continue;
+      }
+      EdgeDirectProjection* e = new EdgeDirectProjection(color[j], images[i]);
+      e->setVertex(0, dynamic_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(j+images.size())));
+      e->setVertex(1, dynamic_cast<VertexSophus*>(optimizer.vertex(i)));
+      e->setInformation(Eigen::Matrix<double, 16, 16>::Identity()*1e5);
+      e->setId(edge_id); edge_id++;
+      optimizer.addEdge(e);
+    }
+  }
+  cout
+    << "Problem loaded." << endl
+    << "  Number of images: " << images.size() << endl
+    << "  Number of points: " << points.size() << endl
+    << "  Number of edges: " << optimizer.edges().size() << endl;
   // END YOUR CODE HERE
 
   // perform optimization
@@ -189,8 +264,27 @@ int main(int argc, char **argv)
 
   // TODO fetch data from the optimizer
   // START YOUR CODE HERE
-  // END YOUR CODE HERE
+  // update poses 
+  cout << endl;
+  cout << "Before optimization:" << endl;
+  for(int i=0; i<poses.size(); i++){
+    cout
+      << "poses " << i << ": " << endl
+      << poses[i].matrix() << endl;
+  }
+  cout << "After optimization:" << endl;
+  for(int i=0; i<poses_opt.size(); i++){
+    poses[i] = poses_opt[i]->estimate();
+    cout
+      << "poses " << i << ": " << endl
+      << poses[i].matrix() << endl;
+  }
+  // update points
+  for(int i=0; i<points_opt.size(); i++){
+    points[i] = points_opt[i]->estimate();
+  }
 
+  // END YOUR CODE HERE
   // plot the optimized points and poses
   Draw(poses, points);
 
