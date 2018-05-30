@@ -30,4 +30,4 @@ add_executable(BAL src/BAL.cpp)
 target_link_libraries(BAL ${CERES_LIBRARIES} g2o_core g2o_stuff)
 
 add_executable(PBA src/PBA.cpp)
-target_link_libraries(PBA ${OpenCV_LIBS} ${CERES_LIBRARIES} ${Pangolin_LIBRARIES} g2o_core g2o_stuff)
+target_link_libraries(PBA ${OpenCV_LIBS} ${CERES_LIBRARIES} ${Pangolin_LIBRARIES} g2o_core g2o_stuff g2o_types_sba)

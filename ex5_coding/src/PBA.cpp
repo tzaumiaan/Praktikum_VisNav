@@ -213,21 +213,21 @@ int main(int argc, char **argv)
   // add camera poses
   vector<VertexSophus*> poses_opt;
   for(int i=0; i<images.size(); i++){
-    VertexSophus* p = new VertexSophus();
-    p->setId(id); id++;
-    p->setEstimate(poses[i]);
-    poses_opt.push_back(p);
-    optimizer.addVertex(p);
+    VertexSophus* ps = new VertexSophus();
+    ps->setId(id); id++;
+    ps->setEstimate(poses[i]);
+    poses_opt.push_back(ps);
+    optimizer.addVertex(ps);
   }
   // add points
   vector<g2o::VertexSBAPointXYZ*> points_opt;
   for(int i=0; i<points.size(); i++){
-    g2o::VertexSBAPointXYZ* p = new g2o::VertexSBAPointXYZ();
-    p->setId(id); id++;
-    p->setEstimate(points[i]);
-    p->setMarginalized(true);
-    points_opt.push_back(p);
-    optimizer.addVertex(p);
+    g2o::VertexSBAPointXYZ* pt = new g2o::VertexSBAPointXYZ();
+    pt->setId(id); id++;
+    pt->setEstimate(points[i]);
+    pt->setMarginalized(true);
+    points_opt.push_back(pt);
+    optimizer.addVertex(pt);
   }
   // add edges
   int edge_id = 0;
@@ -256,6 +256,8 @@ int main(int argc, char **argv)
     << "  Number of images: " << images.size() << endl
     << "  Number of points: " << points.size() << endl
     << "  Number of edges: " << optimizer.edges().size() << endl;
+  // plot the original points and poses
+  //Draw(poses, points);
   // END YOUR CODE HERE
 
   // perform optimization
