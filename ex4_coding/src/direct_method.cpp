@@ -202,8 +202,8 @@ void DirectPoseEstimationSingleLayer(
 
     // in order to help you debug, we plot the projected pixels here
     cv::Mat img1_show, img2_show;
-    cv::cvtColor(img1, img1_show, CV_GRAY2BGR);
-    cv::cvtColor(img2, img2_show, CV_GRAY2BGR);
+    cv::cvtColor(img1, img1_show, cv::COLOR_GRAY2BGR);
+    cv::cvtColor(img2, img2_show, cv::COLOR_GRAY2BGR);
     for (auto &px: px_ref) {
         cv::rectangle(img1_show, cv::Point2f(px[0] - 2, px[1] - 2), cv::Point2f(px[0] + 2, px[1] + 2),
                       cv::Scalar(0, 250, 0));

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(ex5)
-set(CMAKE_CXX_FLAGS "-std=c++11 -O3")
+set(CMAKE_CXX_FLAGS "-std=c++14 -O3")
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # opencv
@@ -20,6 +20,7 @@ include_directories(${Sophus_INCLUDE_DIRS})
 
 # g2o or ceres if needed
 # g2o
+include_directories("/usr/include/suitesparse")  # suitesprase installed by apt-get
 find_package(G2O REQUIRED)
 include_directories(${G2O_INCLUDE_DIRS})
 # ceres

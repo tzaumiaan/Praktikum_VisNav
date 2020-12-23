@@ -5,6 +5,9 @@ set(CMAKE_CXX_FLAGS "-std=c++11")
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+# eigen
+include_directories(/usr/local/include/eigen3/)
+
 # opencv
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
